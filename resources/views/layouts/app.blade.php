@@ -68,6 +68,16 @@
             font-size: 14px;
         }
 
+        .navbar-nav a[href*="admin"] {
+            background: rgba(255, 255, 255, 0.15);
+            margin-left: 10px;
+        }
+
+        .navbar-nav a[href*="admin"]:hover,
+        .navbar-nav a[href*="admin"].active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         .navbar-nav a:hover {
             background: rgba(255, 255, 255, 0.2);
         }
@@ -307,11 +317,13 @@
             <a href="/attendance" class="{{ request()->is('attendance*') ? 'active' : '' }}">Attendance</a>
             <a href="/logbook" class="{{ request()->is('logbook*') ? 'active' : '' }}">Logbook</a>
             <a href="/activities" class="{{ request()->is('activities*') ? 'active' : '' }}">Activities</a>
-            <a href="/documents" class="{{ request()->is('documents*') ? 'active' : '' }}">Documents</a>
             <a href="/reports" class="{{ request()->is('reports*') ? 'active' : '' }}">Reports</a>
             @if(auth()->user()->hasRole('admin'))
-                <a href="{{ route('admin.roles') }}" class="{{ request()->is('admin*') ? 'active' : '' }}" style="margin-left: 20px; background: rgba(255, 255, 255, 0.15);">
-                    <i class="bi bi-shield-lock" style="margin-right: 5px;"></i>Admin
+                <a href="{{ route('admin.users') }}" class="{{ request()->is('admin/users*') ? 'active' : '' }}" style="margin-left: 20px;">
+                    <i class="bi bi-people" style="margin-right: 5px;"></i>Users
+                </a>
+                <a href="{{ route('admin.roles') }}" class="{{ request()->is('admin/roles*') ? 'active' : '' }}">
+                    <i class="bi bi-shield-lock" style="margin-right: 5px;"></i>Roles
                 </a>
             @endif
         </div>

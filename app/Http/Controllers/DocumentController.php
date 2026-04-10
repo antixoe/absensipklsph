@@ -127,17 +127,3 @@ class DocumentController extends Controller
         return Storage::disk('public')->download($document->file_path, $document->file_name);
     }
 }
-
-    public function download(Document $document)
-    {
-        if ($document->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        if (!Storage::disk('public')->exists($document->file_path)) {
-            return redirect('/documents')->with('error', 'File not found!');
-        }
-
-        return Storage::disk('public')->download($document->file_path, $document->file_name);
-    }
-}

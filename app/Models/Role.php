@@ -46,8 +46,8 @@ class Role extends Model
     public function hasFeature(string $featureSlug): bool
     {
         return $this->features()
-            ->where('slug', $featureSlug)
-            ->where('is_active', true)
+            ->where('features.slug', $featureSlug)
+            ->where('features.is_active', true)
             ->exists();
     }
 }

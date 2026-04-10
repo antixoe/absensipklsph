@@ -6,8 +6,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LogbookEntryController;
 use App\Http\Controllers\ActivityController;
-use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 
 // Guest routes
 Route::middleware('guest')->group(function () {
@@ -23,6 +23,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/attendance', [DashboardController::class, 'attendance'])->name('dashboard.attendance');
+    Route::get('/dashboard/logbook', [DashboardController::class, 'logbook'])->name('dashboard.logbook');
+    Route::get('/dashboard/activities', [DashboardController::class, 'activities'])->name('dashboard.activities');
+    Route::get('/dashboard/documents', [DashboardController::class, 'documents'])->name('dashboard.documents');
+    Route::get('/dashboard/reports', [DashboardController::class, 'reports'])->name('dashboard.reports');
+    
+    // Shortcut route for reports
+    Route::get('/reports', [DashboardController::class, 'reports'])->name('reports');
     
     // Attendance CRUD
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
@@ -63,17 +71,20 @@ Route::middleware('auth')->group(function () {
         // Features Management
         Route::get('/admin/features', [RoleController::class, 'features'])->name('admin.features');
         Route::post('/admin/features/{feature}/toggle', [RoleController::class, 'toggleFeature'])->name('admin.features.toggle');
+        
+        // Users Management
+        Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users');
+        Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
+        Route::post('/admin/users', [UserController::class, 'store'])->name('admin.users.store');
+        Route::get('/admin/users/{user}', [UserController::class, 'show'])->name('admin.users.show');
+        Route::get('/admin/users/{user}/edit', [UserController::class, 'edit'])->name('admin.users.edit');
+        Route::put('/admin/users/{user}', [UserController::class, 'update'])->name('admin.users.update');
+        Route::delete('/admin/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+        
+        // Users Import
+        Route::get('/admin/users/import/form', [UserController::class, 'importForm'])->name('admin.users.import-form');
+        Route::post('/admin/users/import', [UserController::class, 'import'])->name('admin.users.import');
     });
-    
-    // Documents CRUD
-    Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
-    Route::get('/documents/create', [DocumentController::class, 'create'])->name('documents.create');
-    Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
-    Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
-    Route::get('/documents/{document}/edit', [DocumentController::class, 'edit'])->name('documents.edit');
-    Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
-    Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
-    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
 });
 
 // Home/login redirect

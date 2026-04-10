@@ -28,17 +28,6 @@
     </div>
 
     <div class="card">
-        <div class="card-title">Quick Actions</div>
-        <div class="button-group">
-            <a href="/attendance" class="btn">📍 Check In Attendance</a>
-            <a href="/logbook" class="btn">📝 Write Logbook Entry</a>
-            <a href="/activities" class="btn">✓ View Activities</a>
-            <a href="/documents" class="btn">📄 Upload Documents</a>
-            <a href="/reports" class="btn">📊 View Reports</a>
-        </div>
-    </div>
-
-    <div class="card">
         <div class="card-title">User Information</div>
         <p><strong>Name:</strong> {{ $user->name }}</p>
         <p><strong>Email:</strong> {{ $user->email }}</p>

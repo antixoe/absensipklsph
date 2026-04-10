@@ -36,7 +36,7 @@ class RoleController extends Controller
         }
 
         $features = Feature::all();
-        $selectedFeatures = $role->features()->pluck('id')->toArray();
+        $selectedFeatures = $role->features()->pluck('features.id')->toArray();
 
         return view('admin.roles.edit', compact('role', 'features', 'selectedFeatures'));
     }
