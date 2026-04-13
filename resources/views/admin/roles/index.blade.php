@@ -17,9 +17,14 @@
     <div class="card">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span><i class="bi bi-people" style="margin-right: 8px;"></i>Roles & Permissions</span>
-            <a href="{{ route('admin.features') }}" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;">
-                <i class="bi bi-sliders" style="margin-right: 5px;"></i>Manage Features
-            </a>
+            <div style="display: flex; gap: 10px;">
+                <a href="{{ route('admin.roles.create') }}" class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;">
+                    <i class="bi bi-plus-circle" style="margin-right: 5px;"></i>Create Role
+                </a>
+                <a href="{{ route('admin.features') }}" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;">
+                    <i class="bi bi-sliders" style="margin-right: 5px;"></i>Manage Features
+                </a>
+            </div>
         </div>
 
         <div style="overflow-x: auto; margin-top: 20px;">
@@ -49,9 +54,14 @@
                                 </div>
                             </td>
                             <td style="padding: 12px; text-align: center;">
-                                <a href="{{ route('admin.roles.edit', $role) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">
+                                <a href="{{ route('admin.roles.edit', $role) }}" class="btn" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">
                                     <i class="bi bi-pencil-square" style="margin-right: 5px;"></i>Edit
                                 </a>
+                                @unless(in_array($role->name, ['student', 'industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']))
+                                    <button type="button" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="confirmDelete('{{ $role->name }}', '{{ route('admin.roles.destroy', $role) }}')">
+                                        <i class="bi bi-trash" style="margin-right: 5px;"></i>Delete
+                                    </button>
+                                @endunless
                             </td>
                         </tr>
                     @endforeach
@@ -60,7 +70,88 @@
         </div>
     </div>
 
-    <!-- Role Details Section -->
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+            <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 18px; color: #1f2937;">Delete Role</h3>
+                <button type="button" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;" onclick="closeDeleteModal()">×</button>
+            </div>
+
+            <div style="padding: 25px;">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <i class="bi bi-exclamation-circle" style="font-size: 48px; color: #991b1b;"></i>
+                </div>
+                <p style="margin: 0 0 10px 0; font-size: 16px; color: #1f2937; text-align: center;">
+                    Are you sure you want to delete the <strong id="deleteRoleName"></strong> role?
+                </p>
+                <p style="font-size: 13px; color: #6b7280; margin: 10px 0; text-align: center;">
+                    This action cannot be undone.
+                </p>
+            </div>
+
+            <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" style="padding: 10px 16px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="closeDeleteModal()">Cancel</button>
+                <button type="button" id="deleteConfirmBtn" style="padding: 10px 16px; background: #991b1b; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="submitDelete()">Delete Role</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let deleteFormAction = null;
+
+        function confirmDelete(roleName, deleteUrl) {
+            document.getElementById('deleteRoleName').textContent = roleName;
+            deleteFormAction = deleteUrl;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            deleteFormAction = null;
+        }
+
+        function submitDelete() {
+            if (!deleteFormAction) return;
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = deleteFormAction;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (csrfToken) {
+                const token = document.createElement('input');
+                token.type = 'hidden';
+                token.name = '_token';
+                token.value = csrfToken.getAttribute('content');
+                form.appendChild(token);
+            }
+
+            const method = document.createElement('input');
+            method.type = 'hidden';
+            method.name = '_method';
+            method.value = 'DELETE';
+            form.appendChild(method);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDeleteModal();
+            }
+        });
+    </script>
+@endsection
     <div style="margin-top: 30px;">
         <h2 style="margin-bottom: 20px;"><i class="bi bi-info-circle" style="margin-right: 8px;"></i>Role Definitions</h2>
         

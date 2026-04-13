@@ -56,6 +56,14 @@ class Student extends Model
     }
 
     /**
+     * Get the absences for this student.
+     */
+    public function absences(): HasMany
+    {
+        return $this->hasMany(Absence::class);
+    }
+
+    /**
      * Get the logbook entries for this student.
      */
     public function logbookEntries(): HasMany

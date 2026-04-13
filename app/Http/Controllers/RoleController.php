@@ -26,6 +26,51 @@ class RoleController extends Controller
     }
 
     /**
+     * Show the form for creating a new role.
+     */
+    public function create()
+    {
+        // Only admin can manage roles
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $features = Feature::all();
+        return view('admin.roles.create', compact('features'));
+    }
+
+    /**
+     * Store a newly created role in database.
+     */
+    public function store(Request $request)
+    {
+        // Only admin can manage roles
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'features' => ['array'],
+            'features.*' => ['exists:features,id'],
+        ]);
+
+        $role = Role::create([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        // Attach selected features
+        if (!empty($validated['features'])) {
+            $role->features()->sync($validated['features']);
+        }
+
+        return redirect()->route('admin.roles')
+            ->with('success', 'Role created successfully!');
+    }
+
+    /**
      * Edit role permissions.
      */
     public function edit(Role $role)
@@ -58,6 +103,36 @@ class RoleController extends Controller
 
         return redirect()->route('admin.roles')
             ->with('success', 'Role permissions updated successfully!');
+    }
+
+    /**
+     * Delete a role.
+     */
+    public function destroy(Role $role)
+    {
+        // Only admin can manage roles
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        // Prevent deletion of predefined system roles
+        $systemRoles = ['student', 'industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin'];
+        if (in_array($role->name, $systemRoles)) {
+            return redirect()->route('admin.roles')
+                ->with('error', 'Cannot delete system roles. This role is essential to the application.');
+        }
+
+        // Prevent deletion if role has users
+        if ($role->users()->exists()) {
+            return redirect()->route('admin.roles')
+                ->with('error', 'Cannot delete role. ' . $role->users()->count() . ' user(s) are assigned to this role.');
+        }
+
+        $roleName = ucfirst(str_replace('_', ' ', $role->name));
+        $role->delete();
+
+        return redirect()->route('admin.roles')
+            ->with('success', 'Role "' . $roleName . '" deleted successfully!');
     }
 
     /**

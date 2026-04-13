@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') - Absensi PKL</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
@@ -314,10 +315,15 @@
 
         <div class="navbar-nav">
             <a href="/dashboard" class="{{ request()->is('dashboard') ? 'active' : '' }}">Dashboard</a>
-            <a href="/attendance" class="{{ request()->is('attendance*') ? 'active' : '' }}">Attendance</a>
-            <a href="/logbook" class="{{ request()->is('logbook*') ? 'active' : '' }}">Logbook</a>
-            <a href="/activities" class="{{ request()->is('activities*') ? 'active' : '' }}">Activities</a>
-            <a href="/reports" class="{{ request()->is('reports*') ? 'active' : '' }}">Reports</a>
+            <a href="/absence" class="{{ request()->is('absence*') && !request()->is('absence/pending*') ? 'active' : '' }}">Absence</a>
+            @if(auth()->user()->hasAnyRole(['homeroom_teacher', 'head_of_department', 'industry_supervisor', 'school_principal', 'admin']))
+                <a href="{{ route('absence.pending') }}" class="{{ request()->is('absence/pending*') ? 'active' : '' }}" style="position: relative;">
+                    <i class="bi bi-check-square" style="margin-right: 4px;"></i>Approve
+                </a>
+            @endif
+            <a href="{{ route('reports.index') }}" class="{{ request()->is('reports*') ? 'active' : '' }}">
+                <i class="bi bi-bar-chart" style="margin-right: 4px;"></i>Reports
+            </a>
             @if(auth()->user()->hasRole('admin'))
                 <a href="{{ route('admin.users') }}" class="{{ request()->is('admin/users*') ? 'active' : '' }}" style="margin-left: 20px;">
                     <i class="bi bi-people" style="margin-right: 5px;"></i>Users

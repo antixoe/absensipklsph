@@ -14,15 +14,38 @@ class UserController extends Controller
     /**
      * Display a listing of users.
      */
-    public function index()
+    public function index(Request $request)
     {
         // Only admin can manage users
         if (!Auth::user() || !Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access');
         }
 
-        $users = User::with('role')->paginate(10);
-        return view('admin.users.index', compact('users'));
+        $query = User::with('role');
+
+        // Search by name or email
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by role
+        if ($request->filled('role')) {
+            $query->where('role_id', $request->get('role'));
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
+        $users = $query->paginate(10)->withQueryString();
+        $roles = Role::all();
+
+        return view('admin.users.index', compact('users', 'roles'));
     }
 
     /**
@@ -46,25 +69,48 @@ class UserController extends Controller
     {
         // Only admin can create users
         if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
             abort(403, 'Unauthorized access');
         }
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'role_id' => ['required', 'exists:roles,id'],
-            'status' => ['required', 'in:active,inactive'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'email', 'unique:users,email'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+                'phone' => ['nullable', 'string', 'max:20'],
+                'address' => ['nullable', 'string', 'max:255'],
+                'role_id' => ['required', 'exists:roles,id'],
+                'status' => ['required', 'in:active,inactive'],
+            ]);
 
-        $validated['password'] = Hash::make($validated['password']);
+            $validated['password'] = Hash::make($validated['password']);
 
-        User::create($validated);
+            User::create($validated);
 
-        return redirect()->route('admin.users')
-            ->with('success', 'User created successfully!');
+            // Return JSON response for AJAX requests
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'User created successfully!'
+                ]);
+            }
+
+            return redirect()->route('admin.users')
+                ->with('success', 'User created successfully!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return JSON response for AJAX requests with validation errors
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -199,5 +245,115 @@ class UserController extends Controller
             return redirect()->back()
                 ->with('error', 'Error importing file: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get user details as JSON for modal view.
+     */
+    public function getDetails(User $user)
+    {
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $user->load('role');
+
+        return response()->json([
+            'success' => true,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone ?? '-',
+                'address' => $user->address,
+                'role' => ucfirst(str_replace('_', ' ', $user->role->name ?? 'N/A')),
+                'status' => $user->status,
+                'created_at' => $user->created_at->format('M d, Y H:i'),
+                'updated_at' => $user->updated_at->format('M d, Y H:i'),
+            ]
+        ]);
+    }
+
+    /**
+     * Get user edit form data as JSON.
+     */
+    public function getEditData(User $user)
+    {
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $user->load('role');
+        $roles = Role::all();
+
+        return response()->json([
+            'success' => true,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'address' => $user->address,
+                'role_id' => $user->role_id,
+                'status' => $user->status,
+            ],
+            'roles' => $roles->map(fn($role) => [
+                'id' => $role->id,
+                'name' => ucfirst(str_replace('_', ' ', $role->name))
+            ])
+        ]);
+    }
+
+    /**
+     * Get roles list as JSON for modal form.
+     */
+    public function getRoles()
+    {
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $roles = Role::all();
+
+        return response()->json([
+            'success' => true,
+            'roles' => $roles->map(fn($role) => [
+                'id' => $role->id,
+                'name' => ucfirst(str_replace('_', ' ', $role->name))
+            ])
+        ]);
+    }
+
+    /**
+     * Update user via API for modal form.
+     */
+    public function updateViaModal(Request $request, User $user)
+    {
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email,' . $user->id],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'role_id' => ['required', 'exists:roles,id'],
+            'status' => ['required', 'in:active,inactive'],
+        ]);
+
+        if ($validated['password']) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+
+        $user->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User updated successfully!'
+        ]);
     }
 }
