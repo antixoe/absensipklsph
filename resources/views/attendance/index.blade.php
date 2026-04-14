@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Attendance Management')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-geo-alt" style="margin-right: 8px;"></i>Attendance Management</h1>

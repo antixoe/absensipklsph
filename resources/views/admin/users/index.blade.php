@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'User Management')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-people" style="margin-right: 8px;"></i>User Management</h1>

@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Create Activity')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-plus-circle" style="margin-right: 8px;"></i>Create Activity</h1>

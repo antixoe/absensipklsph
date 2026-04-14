@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Documents')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-file-text" style="margin-right: 8px;"></i>Documents</h1>

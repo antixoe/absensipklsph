@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Activity Details')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-check-circle-fill" style="margin-right: 8px;"></i>{{ $activity->activity_name }}</h1>

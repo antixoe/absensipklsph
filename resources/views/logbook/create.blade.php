@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Create Logbook Entry')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-journal-text" style="margin-right: 8px;"></i>Create Logbook Entry</h1>

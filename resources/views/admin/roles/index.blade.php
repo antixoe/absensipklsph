@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Manage Roles & Features')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-shield-lock" style="margin-right: 8px;"></i>Manage Roles & Features</h1>

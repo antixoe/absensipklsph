@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Manage Features')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-sliders" style="margin-right: 8px;"></i>Manage Features</h1>

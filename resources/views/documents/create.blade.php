@@ -1,6 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Upload Document')
 
 @section('content')
     <div class="page-header">

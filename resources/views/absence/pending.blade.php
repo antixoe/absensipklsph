@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Approve Student Absences')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-check-square" style="margin-right: 8px;"></i>Approve Student Absences</h1>

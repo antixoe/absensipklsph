@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Import Users from Excel')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-file-earmark-excel" style="margin-right: 8px;"></i>Import Users from Excel</h1>

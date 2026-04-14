@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-hand-thumbs-up" style="margin-right: 8px;"></i>Welcome, {{ $user->name }}!</h1>

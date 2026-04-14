@@ -80,6 +80,38 @@
             font-family: inherit;
         }
 
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input[type="password"],
+        .password-wrapper input[type="text"] {
+            padding-right: 45px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 18px;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s;
+        }
+
+        .password-toggle:hover {
+            color: #f97316;
+        }
+
         input[type="text"]:focus,
         input[type="email"]:focus,
         input[type="password"]:focus,
@@ -236,6 +268,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 </head>
 <body>
     <!-- Toast Messages -->
@@ -356,7 +389,12 @@
             <!-- Password Fields -->
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" required>
+                    <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
                 @error('password')
                     <div class="error-message">{{ $message }}</div>
                 @enderror
@@ -364,7 +402,12 @@
 
             <div class="form-group">
                 <label for="password_confirmation">Confirm Password</label>
-                <input type="password" id="password_confirmation" name="password_confirmation" required>
+                <div class="password-wrapper">
+                    <input type="password" id="password_confirmation" name="password_confirmation" required>
+                    <button type="button" class="password-toggle" onclick="togglePassword('password_confirmation')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
             </div>
 
             <button type="submit">Create Account</button>
@@ -387,6 +430,22 @@
             } else {
                 studentFields.classList.remove('active');
                 instructorFields.classList.add('active');
+            }
+        }
+
+        function togglePassword(fieldId) {
+            const passwordField = document.getElementById(fieldId);
+            const toggleButton = document.querySelector(`button[onclick="togglePassword('${fieldId}')"`);
+            const icon = toggleButton.querySelector('i');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
             }
         }
     </script>

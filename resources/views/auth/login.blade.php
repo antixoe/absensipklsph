@@ -65,6 +65,7 @@
             font-size: 14px;
         }
 
+        input[type="text"],
         input[type="email"],
         input[type="password"] {
             width: 100%;
@@ -75,6 +76,39 @@
             transition: border-color 0.3s;
         }
 
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input[type="password"],
+        .password-wrapper input[type="text"] {
+            padding-right: 45px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 18px;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s;
+        }
+
+        .password-toggle:hover {
+            color: #f97316;
+        }
+
+        input[type="text"]:focus,
         input[type="email"]:focus,
         input[type="password"]:focus {
             outline: none;
@@ -176,6 +210,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 </head>
 <body>
     <!-- Toast Messages -->
@@ -224,12 +259,17 @@
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    required
-                >
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        required
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
                 @error('password')
                     <div class="error-message">{{ $message }}</div>
                 @enderror
@@ -242,5 +282,23 @@
             Don't have an account? <a href="{{ route('register') }}">Register here</a>
         </div>
     </div>
+
+    <script>
+        function togglePassword(fieldId) {
+            const passwordField = document.getElementById(fieldId);
+            const toggleButton = document.querySelector(`button[onclick="togglePassword('${fieldId}')"`);
+            const icon = toggleButton.querySelector('i');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+    </script>
 </body>
 </html>

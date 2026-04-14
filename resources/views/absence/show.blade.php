@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Absence History - ' . $student->user->name)
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-clock-history" style="margin-right: 8px;"></i>Absence History</h1>

@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'View User')
-
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-person-circle" style="margin-right: 8px;"></i>{{ $user->name }}</h1>
