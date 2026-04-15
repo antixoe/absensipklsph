@@ -77,19 +77,7 @@
         </div>
     </div>
 
-    <!-- Top Students with Absences -->
-    <div class="card">
-        <div class="card-title"><i class="bi bi-people" style="margin-right: 8px;"></i>Top 10 Students with Most Absences</div>
-        @if($absenceByStudent['labels'] && count($absenceByStudent['labels']) > 0)
-            <div style="position: relative; height: 400px; margin-bottom: 20px;">
-                <canvas id="studentChart"></canvas>
-            </div>
-        @else
-            <div style="padding: 40px; text-align: center; color: #666;">
-                <p>No absence data available</p>
-            </div>
-        @endif
-    </div>
+
 
     <!-- Detailed Statistics Table -->
     <div class="card" style="margin-top: 30px;">
@@ -250,44 +238,6 @@
             }
         });
 
-        // Top Students Bar Chart
-        @if(count($absenceByStudent['labels']) > 0)
-        const studentCtx = document.getElementById('studentChart').getContext('2d');
-        new Chart(studentCtx, {
-            type: 'bar',
-            data: {
-                labels: {!! json_encode($absenceByStudent['labels']) !!},
-                datasets: [{
-                    label: 'Number of Absences',
-                    data: {!! json_encode($absenceByStudent['data']) !!},
-                    backgroundColor: colors.danger,
-                    borderColor: colors.danger,
-                    borderWidth: 1,
-                    borderRadius: 6,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    legend: {
-                        labels: { color: '#666', font: { size: 13 } }
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, color: '#666' },
-                        grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                    },
-                    y: {
-                        ticks: { color: '#666', font: { size: 12 } },
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-        @endif
+
     </script>
 @endsection

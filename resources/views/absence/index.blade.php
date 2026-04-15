@@ -83,6 +83,31 @@
                 </div>
             </div>
 
+            <!-- Date & Time Section -->
+            <div style="margin-bottom: 30px;">
+                <div class="card-title"><i class="bi bi-calendar-event" style="margin-right: 8px;"></i>Absence Date & Time</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Date <span style="color: #ef4444;">*</span></label>
+                        <input type="date" name="absence_date" required 
+                               value="{{ old('absence_date', now()->format('Y-m-d')) }}"
+                               style="width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                        @error('absence_date')
+                            <div style="color: #ef4444; margin-top: 5px; font-size: 12px;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Time <span style="color: #ef4444;">*</span></label>
+                        <input type="time" name="absence_time" required 
+                               value="{{ old('absence_time', now()->format('H:i')) }}"
+                               style="width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                        @error('absence_time')
+                            <div style="color: #ef4444; margin-top: 5px; font-size: 12px;">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
             <!-- Selfie Capture Section -->
             <div style="margin-bottom: 30px;">
                 <div class="card-title">Capture Selfie</div>
@@ -183,7 +208,7 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 2px solid #ddd; background: #f5f5f5;">
-                            <th style="padding: 12px; text-align: left; font-weight: 600;">Date</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Date & Time</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Location</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Status</th>
                             <th style="padding: 12px; text-align: center; font-weight: 600;">Selfie</th>
@@ -192,7 +217,7 @@
                     <tbody>
                         @foreach($myRecentAbsences as $record)
                             <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 12px;">{{ $record->absence_date->format('d M Y') }}</td>
+                                <td style="padding: 12px;">{{ $record->absence_date->format('d M Y H:i') }}</td>
                                 <td style="padding: 12px;">{{ $record->location_name ?? '-' }}</td>
                                 <td style="padding: 12px;">
                                     @if($record->status === 'pending')

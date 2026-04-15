@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Absence;
 use App\Models\Student;
+use App\Models\Role;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -20,8 +22,18 @@ class AbsenceController extends Controller
         $today = Carbon::today();
         $currentUser = Auth::user();
         
-        // Get all students
-        $students = Student::with('user')->get();
+        // Prevent admins from submitting absences
+        if ($currentUser->hasRole(Role::ADMIN)) {
+            return redirect()->route('dashboard')->with('error', 'Admins cannot submit absences.');
+        }
+        
+        // Get all non-admin students only
+        $adminRoleId = Role::where('name', Role::ADMIN)->value('id');
+        $students = Student::with('user')
+            ->whereHas('user', function ($query) use ($adminRoleId) {
+                $query->where('role_id', '!=', $adminRoleId);
+            })
+            ->get();
         
         // Check if current user is a student
         $currentUserStudent = Student::where('user_id', $currentUser->id)->first();
@@ -65,10 +77,18 @@ class AbsenceController extends Controller
      */
     public function store(Request $request)
     {
+        // Prevent admins from submitting absences
+        $currentUser = Auth::user();
+        if ($currentUser->hasRole(Role::ADMIN)) {
+            return redirect()->back()->with('error', 'Admins cannot submit absences.');
+        }
+        
         try {
             $validated = $request->validate([
                 'student_ids' => 'required|array',
                 'selfie' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                'absence_date' => 'required|date',
+                'absence_time' => 'required|date_format:H:i',
                 'ip_address' => 'nullable|string',
                 'location_name' => 'nullable|string',
                 'notes' => 'nullable|string',
@@ -79,8 +99,8 @@ class AbsenceController extends Controller
         }
 
         try {
-            $today = Carbon::today();
-            $currentUser = Auth::user();
+            // Parse date and time
+            $absenceDatetime = Carbon::createFromFormat('Y-m-d H:i', $validated['absence_date'] . ' ' . $validated['absence_time']);
             
             // Get or create student record for current user
             $currentUserStudent = Student::where('user_id', $currentUser->id)->first();
@@ -114,10 +134,10 @@ class AbsenceController extends Controller
             $selfieFilename = null;
             $alreadyExists = false;
 
-            // Check if student already has a record for today
+            // Check if student already has a record for this date and time
             if ($currentUserStudent) {
                 $existingAbsence = Absence::where('student_id', $currentUserStudent->id)
-                    ->whereDate('absence_date', $today)
+                    ->whereDate('absence_date', $absenceDatetime->toDateString())
                     ->first();
                 
                 if ($existingAbsence) {
@@ -137,7 +157,7 @@ class AbsenceController extends Controller
                 Absence::updateOrCreate(
                     [
                         'student_id' => $studentId,
-                        'absence_date' => $today,
+                        'absence_date' => $absenceDatetime,
                     ],
                     [
                         'selfie_path' => $selfieFilename ? 'absences/' . $selfieFilename : null,
@@ -165,6 +185,11 @@ class AbsenceController extends Controller
      */
     public function pending()
     {
+        // Only admins can view pending absences for approval
+        if (!auth()->user()->hasRole(Role::ADMIN)) {
+            return redirect()->route('dashboard')->with('error', 'Only admins can view pending absences.');
+        }
+        
         // Get pending absences with student and user data
         $absences = Absence::with('student.user')
             ->where('status', 'pending')
@@ -190,11 +215,16 @@ class AbsenceController extends Controller
      */
     public function bulkAction(Request $request)
     {
+        // Only admins can approve/reject absences
+        if (!auth()->user()->hasRole(Role::ADMIN)) {
+            return redirect()->back()->with('error', 'Only admins can approve or reject absences.');
+        }
+        
         $validated = $request->validate([
             'absence_ids' => 'required|array',
             'absence_ids.*' => 'exists:absences,id',
             'action' => 'required|in:approve,reject',
-            'signature' => 'required|string',
+            'signature' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
 
@@ -230,6 +260,14 @@ class AbsenceController extends Controller
                 'approved_at' => now(),
                 'approved_by' => auth()->id(),
             ]);
+
+            // Log the activity
+            ActivityLog::log(
+                $status === 'approved' ? 'approved_absence' : 'rejected_absence',
+                'absence',
+                $absenceId,
+                "Absence for student {$absence->student->user->name} on {$absence->absence_date->format('Y-m-d H:i')} was {$status}"
+            );
         }
 
         $message = ucfirst($action) . 'd ' . count($validated['absence_ids']) . ' absence(s) successfully.';
@@ -237,11 +275,82 @@ class AbsenceController extends Controller
     }
 
     /**
+     * Show all absences for all students.
+     */
+    public function all(Request $request)
+    {
+        // Get search and filter parameters
+        $search = $request->query('search');
+        $status = $request->query('status');
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+
+        // Build query with filters
+        $query = Absence::with('student.user');
+
+        // Search filter (student name or NIM)
+        if ($search) {
+            $query->whereHas('student.user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            })->orWhereHas('student', function ($q) use ($search) {
+                $q->where('nim', 'like', "%{$search}%");
+            });
+        }
+
+        // Status filter
+        if ($status && in_array($status, ['approved', 'pending', 'rejected'])) {
+            $query->where('status', $status);
+        }
+
+        // Date range filter
+        if ($dateFrom) {
+            $query->whereDate('absence_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('absence_date', '<=', $dateTo);
+        }
+
+        // Get filtered and paginated absences
+        $absences = $query->orderBy('absence_date', 'desc')->paginate(50);
+
+        // Get summary statistics (unfiltered for dashboard cards)
+        $totalAbsences = Absence::count();
+        $approvedAbsences = Absence::where('status', 'approved')->count();
+        $pendingAbsences = Absence::where('status', 'pending')->count();
+        $rejectedAbsences = Absence::where('status', 'rejected')->count();
+
+        return view('absence.all', compact(
+            'absences',
+            'totalAbsences',
+            'approvedAbsences',
+            'pendingAbsences',
+            'rejectedAbsences',
+            'search',
+            'status',
+            'dateFrom',
+            'dateTo'
+        ));
+    }
+
+    /**
      * Approve an absence record.
      */
     public function approve(Absence $absence)
     {
+        // Only admins can approve absences
+        if (!auth()->user()->hasRole(Role::ADMIN)) {
+            return redirect()->back()->with('error', 'Only admins can approve absences.');
+        }
+        
         $absence->update(['status' => 'approved']);
+        
+        // Log the activity
+        ActivityLog::log(
+            'approved_absence',
+            'absence',
+            $absence->id,
+            "Absence for student {$absence->student->user->name} on {$absence->absence_date->format('Y-m-d H:i')} was approved"
+        );
 
         return redirect()->back()->with('success', 'Absence approved successfully.');
     }
@@ -251,7 +360,20 @@ class AbsenceController extends Controller
      */
     public function reject(Absence $absence)
     {
+        // Only admins can reject absences
+        if (!auth()->user()->hasRole(Role::ADMIN)) {
+            return redirect()->back()->with('error', 'Only admins can reject absences.');
+        }
+        
         $absence->update(['status' => 'rejected']);
+        
+        // Log the activity
+        ActivityLog::log(
+            'rejected_absence',
+            'absence',
+            $absence->id,
+            "Absence for student {$absence->student->user->name} on {$absence->absence_date->format('Y-m-d H:i')} was rejected"
+        );
 
         return redirect()->back()->with('success', 'Absence rejected.');
     }

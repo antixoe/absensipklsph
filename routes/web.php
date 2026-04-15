@@ -10,6 +10,8 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AbsenceController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\ChatbotController;
 
 // Guest routes
 Route::middleware('guest')->group(function () {
@@ -46,6 +48,7 @@ Route::middleware('auth')->group(function () {
     // Absence CRUD
     Route::get('/absence', [AbsenceController::class, 'index'])->name('absence.index');
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
+    Route::get('/absence/all', [AbsenceController::class, 'all'])->name('absence.all');
     Route::get('/absence/pending', [AbsenceController::class, 'pending'])->name('absence.pending');
     Route::post('/absence/bulk-action', [AbsenceController::class, 'bulkAction'])->name('absence.bulkAction');
     Route::get('/absence/{student}', [AbsenceController::class, 'show'])->name('absence.show');
@@ -74,6 +77,20 @@ Route::middleware('auth')->group(function () {
     Route::put('/activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
     Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])->name('activities.destroy');
     Route::post('/activities/{activity}/complete', [ActivityController::class, 'complete'])->name('activities.complete');
+    
+    // Settings
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings/clear-logs', [SettingsController::class, 'clearLogs'])->name('settings.clearLogs');
+    Route::get('/settings/export-logs', [SettingsController::class, 'exportLogs'])->name('settings.exportLogs');
+    Route::get('/settings/trash', [SettingsController::class, 'trash'])->name('settings.trash');
+    Route::post('/activity-logs/{id}/delete', [SettingsController::class, 'delete'])->name('activity-logs.delete');
+    Route::post('/activity-logs/{id}/restore', [SettingsController::class, 'restore'])->name('activity-logs.restore');
+    Route::post('/activity-logs/{id}/force-delete', [SettingsController::class, 'forceDelete'])->name('activity-logs.forceDelete');
+    Route::post('/settings/empty-trash', [SettingsController::class, 'emptyTrash'])->name('settings.emptyTrash');
+    
+    // Chatbot Routes
+    Route::get('/chatbot', [ChatbotController::class, 'index'])->name('chatbot.index');
+    Route::post('/chatbot/chat', [ChatbotController::class, 'chat'])->name('chatbot.chat');
     
     // Admin Routes - Role & Feature Management
     Route::middleware('admin')->group(function () {

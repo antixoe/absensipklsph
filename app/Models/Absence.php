@@ -36,7 +36,7 @@ class Absence extends Model
     protected $casts = [
         'latitude' => 'float',
         'longitude' => 'float',
-        'absence_date' => 'date',
+        'absence_date' => 'datetime',
         'approved_at' => 'datetime',
     ];
 

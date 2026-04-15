@@ -21,14 +21,12 @@ class ReportController extends Controller
         // Get absence statistics
         $absenceStats = $this->getAbsenceStatistics($startDate, $endDate);
         $absenceByStatus = $this->getAbsenceByStatus($startDate, $endDate);
-        $absenceByStudent = $this->getAbsenceByStudent($startDate, $endDate);
         $dailyAbsenceData = $this->getDailyAbsenceData($startDate, $endDate);
         $approvalRateData = $this->getApprovalRateData($startDate, $endDate);
 
         return view('reports.index', compact(
             'absenceStats',
             'absenceByStatus',
-            'absenceByStudent',
             'dailyAbsenceData',
             'approvalRateData',
             'dateRange'
@@ -70,34 +68,7 @@ class ReportController extends Controller
         ];
     }
 
-    /**
-     * Get top 10 students with most absences
-     */
-    private function getAbsenceByStudent($startDate, $endDate)
-    {
-        $studentAbsences = Student::with('user')
-            ->withCount(['absences' => function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('absence_date', [$startDate, $endDate]);
-            }])
-            ->orderBy('absences_count', 'desc')
-            ->limit(10)
-            ->get();
 
-        $labels = [];
-        $data = [];
-
-        foreach ($studentAbsences as $student) {
-            if ($student->absences_count > 0) {
-                $labels[] = $student->user->name;
-                $data[] = $student->absences_count;
-            }
-        }
-
-        return [
-            'labels' => $labels,
-            'data' => $data,
-        ];
-    }
 
     /**
      * Get daily absence data for line chart

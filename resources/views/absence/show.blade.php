@@ -14,7 +14,7 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 2px solid #ddd; background: #f5f5f5;">
-                            <th style="padding: 12px; text-align: left; font-weight: 600;">Date</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Date & Time</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Status</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">IP Address</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Location</th>
@@ -26,7 +26,7 @@
                     <tbody>
                         @foreach($absences as $absence)
                             <tr style="border-bottom: 1px solid #eee; transition: background 0.3s;">
-                                <td style="padding: 12px;">{{ $absence->absence_date->format('M d, Y') }}</td>
+                                <td style="padding: 12px;">{{ $absence->absence_date->format('M d, Y H:i') }}</td>
                                 <td style="padding: 12px;">
                                     <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; 
                                                  font-size: 12px; font-weight: 600;

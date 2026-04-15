@@ -30,7 +30,7 @@
                                            onchange="toggleTableCheckboxes(this)">
                                 </th>
                                 <th style="padding: 12px; text-align: left; font-weight: 600;">Student Name</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600;">Date</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Date & Time</th>
                                 <th style="padding: 12px; text-align: left; font-weight: 600;">Location</th>
                                 <th style="padding: 12px; text-align: center; font-weight: 600;">Selfie</th>
                                 <th style="padding: 12px; text-align: left; font-weight: 600;">Notes</th>
@@ -48,7 +48,7 @@
                                         <strong>{{ $absence->student->user->name }}</strong><br>
                                         <small style="color: #666;">NIM: {{ $absence->student->nim }}</small>
                                     </td>
-                                    <td style="padding: 12px;">{{ $absence->absence_date->format('M d, Y') }}</td>
+                                    <td style="padding: 12px;">{{ $absence->absence_date->format('M d, Y H:i') }}</td>
                                     <td style="padding: 12px;">
                                         <small style="word-break: break-word;">{{ $absence->location_name }}</small>
                                     </td>
@@ -69,28 +69,6 @@
                             @endforeach
                         </tbody>
                     </table>
-                </div>
-
-                <!-- Signature Section -->
-                <div class="card-title" style="font-size: 18px; margin-bottom: 20px;">
-                    <i class="bi bi-pen" style="margin-right: 8px;"></i>Teacher/Mentor Signature
-                </div>
-
-                <div style="margin-bottom: 30px;">
-                    <div style="border: 2px solid #ddd; border-radius: 6px; background: #fafafa; padding: 10px;">
-                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
-                            <strong>Sign below to approve or reject the selected absences:</strong>
-                        </p>
-                        <canvas id="signatureCanvas" 
-                                style="border: 1px solid #ddd; border-radius: 4px; display: block; 
-                                       cursor: crosshair; background: white; width: 100%; height: 200px;">
-                        </canvas>
-                        <input type="hidden" id="signatureInput" name="signature">
-                        <button type="button" onclick="clearSignature()" class="btn btn-secondary" 
-                                style="margin-top: 10px; font-size: 12px;">
-                            <i class="bi bi-arrow-clockwise" style="margin-right: 4px;"></i>Clear
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Action Selection -->
@@ -151,30 +129,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
     <script>
-        // Initialize signature pad
-        const canvas = document.getElementById('signatureCanvas');
-        const signaturePad = new SignaturePad(canvas, {
-            backgroundColor: 'rgba(255, 255, 255, 0)',
-            penColor: '#f97316'
-        });
-
-        let resizeTimer;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                const ratio = Math.max(window.devicePixelRatio || 1, 1);
-                canvas.width = canvas.offsetWidth * ratio;
-                canvas.height = canvas.offsetHeight * ratio;
-                canvas.getContext('2d').scale(ratio, ratio);
-                signaturePad.clear();
-            }, 250);
-        });
-
-        function clearSignature() {
-            signaturePad.clear();
-        }
 
         function toggleSelectAll(checkbox) {
             document.querySelectorAll('.absence-checkbox').forEach(cb => {
@@ -219,15 +174,6 @@
                 alert('Please select at least one absence to approve/reject.');
                 return;
             }
-
-            if (signaturePad.isEmpty()) {
-                e.preventDefault();
-                alert('Please sign before submitting.');
-                return;
-            }
-
-            // Store signature
-            document.getElementById('signatureInput').value = signaturePad.toDataURL();
         });
 
         // Close modal on escape
