@@ -179,6 +179,7 @@ class QRCodeController extends Controller
             'selfie' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'ip_address' => 'nullable|string',
         ]);
 
         $currentUser = Auth::user();
@@ -248,8 +249,9 @@ class QRCodeController extends Controller
                 'status' => 'approved', // QR code scans are auto-approved
                 'approved_at' => Carbon::now(),
                 'approved_by' => $qrCode->created_by,
-                'location_name' => 'Scanned via QR Code with Selfie',
+                'location_name' => 'Scanned via QR + Selfie + Location',
                 'selfie_path' => $selfiePath,
+                'ip_address' => $validated['ip_address'] ?? null,
             ]);
 
             // Store location if provided
@@ -262,7 +264,7 @@ class QRCodeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => '✓ Attendance marked successfully with selfie and location!',
+                'message' => 'Attendance marked successfully with QR, selfie, and location!',
                 'data' => [
                     'student_name' => $currentUser->name,
                     'time' => $absence->scanned_qr_at->format('H:i:s'),
