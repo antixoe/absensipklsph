@@ -170,12 +170,15 @@ class QRCodeController extends Controller
     }
 
     /**
-     * Process QR code scan.
+     * Process QR code scan with selfie and location.
      */
     public function scan(Request $request)
     {
         $validated = $request->validate([
             'code' => 'required|string',
+            'selfie' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
         $currentUser = Auth::user();
@@ -228,6 +231,14 @@ class QRCodeController extends Controller
                 ], 400);
             }
 
+            // Save selfie image
+            $selfiePath = null;
+            if ($request->hasFile('selfie')) {
+                $file = $request->file('selfie');
+                $filename = 'selfie_' . $student->id . '_' . Carbon::now()->timestamp . '.' . $file->getClientOriginalExtension();
+                $selfiePath = $file->storeAs('attendance/selfies', $filename, 'public');
+            }
+
             // Create absence record
             $absence = Absence::create([
                 'student_id' => $student->id,
@@ -237,21 +248,21 @@ class QRCodeController extends Controller
                 'status' => 'approved', // QR code scans are auto-approved
                 'approved_at' => Carbon::now(),
                 'approved_by' => $qrCode->created_by,
-                'location_name' => 'Scanned via QR Code',
+                'location_name' => 'Scanned via QR Code with Selfie',
+                'selfie_path' => $selfiePath,
             ]);
 
-            // Try to get geolocation if provided
-            if ($request->has('latitude') && $request->has('longitude')) {
+            // Store location if provided
+            if ($validated['latitude'] !== null && $validated['longitude'] !== null) {
                 $absence->update([
-                    'latitude' => $request->input('latitude'),
-                    'longitude' => $request->input('longitude'),
-                    'location_name' => $request->input('location_name') ?? 'Location',
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
                 ]);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => '✓ Attendance marked successfully!',
+                'message' => '✓ Attendance marked successfully with selfie and location!',
                 'data' => [
                     'student_name' => $currentUser->name,
                     'time' => $absence->scanned_qr_at->format('H:i:s'),
