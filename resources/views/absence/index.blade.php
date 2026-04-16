@@ -6,17 +6,11 @@
         <p>Scan QR code → Take Selfie → Share Location</p>
     </div>
 
-    @if($alreadyScanned)
+    @if($currentUserStudent && $todayAbsence)
         <div style="padding: 15px 20px; background: #dcfce7; border: 2px solid #10b981; border-radius: 8px; margin-bottom: 20px; color: #166534;">
             <i class="bi bi-check-circle-fill" style="margin-right: 8px;"></i>
             <strong>✓ You have already marked your attendance today!</strong>
-            <p style="margin: 8px 0 0 0; font-size: 14px;">Scanned at: {{ $alreadyScanned->scanned_qr_at->format('H:i:s') }}</p>
-        </div>
-    @elseif(!$todayQRCodes)
-        <div style="padding: 15px 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; margin-bottom: 20px; color: #92400e;">
-            <i class="bi bi-info-circle" style="margin-right: 8px;"></i>
-            <strong>No QR codes available today</strong>
-            <p style="margin: 8px 0 0 0; font-size: 14px;">Wait for your instructor to generate codes for today.</p>
+            <p style="margin: 8px 0 0 0; font-size: 14px;">Submitted at: {{ $todayAbsence->created_at->format('H:i:s') }}</p>
         </div>
     @endif
 
@@ -172,7 +166,17 @@
         const submitBtnEl = document.getElementById('submit-attendance-btn');
 
         // Initialize - Focus on QR input
-        qrInput.focus();
+        @if($currentUserStudent && $todayAbsence)
+            // User has already submitted, disable form
+            step1Container.style.opacity = '0.5';
+            step1Container.style.pointerEvents = 'none';
+            qrInput.disabled = true;
+            manualCode.disabled = true;
+            manualForm.querySelector('button').disabled = true;
+            submitBtnEl.style.display = 'none';
+        @else
+            qrInput.focus();
+        @endif
 
         // ==================== QR SCANNING ====================
         qrInput.addEventListener('change', function() {
@@ -367,6 +371,11 @@
 
         // ==================== SUBMIT ====================
         submitBtnEl.addEventListener('click', function() {
+            @if($currentUserStudent && $todayAbsence)
+                showStatus('You have already submitted your attendance today.', 'warning');
+                return;
+            @endif
+            
             if (!state.qrCode) {
                 showStatus('Error: QR code missing.', 'error');
                 return;
