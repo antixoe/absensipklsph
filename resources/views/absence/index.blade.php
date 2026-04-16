@@ -226,12 +226,12 @@
 
         // ==================== QR SCANNING ====================
         // Verify button element exists
-        if (!startQRScannerBtn) {
+        if (!startQRBtn) {
             console.error('❌ QR Scanner button not found!');
         } else {
             console.log('✓ QR Scanner button found, attaching listener');
             
-            startQRScannerBtn.addEventListener('click', async function() {
+            startQRBtn.addEventListener('click', async function() {
                 try {
                     showStatus('Requesting camera access...', 'info');
                     
@@ -263,8 +263,8 @@
                         }
                     }, 3000);
                     
-                    startQRScannerBtn.style.display = 'none';
-                    stopQRScannerBtn.style.display = 'block';
+                    startQRBtn.style.display = 'none';
+                    stopQRBtn.style.display = 'block';
                     qrPlaceholderEl.style.display = 'none';
                     qrVideoEl.style.display = 'block';
                     qrScanOverlay.style.display = 'block';
@@ -272,8 +272,8 @@
                 } catch (error) {
                     showStatus('Camera access denied. Please enable permissions.', 'error');
                     console.error('Camera error:', error);
-                    startQRScannerBtn.style.display = 'block';
-                    stopQRScannerBtn.style.display = 'none';
+                    startQRBtn.style.display = 'block';
+                    stopQRBtn.style.display = 'none';
                 }
             });
         }
@@ -322,7 +322,7 @@
             });
         }
 
-        stopQRScannerBtn.addEventListener('click', function() {
+        stopQRBtn.addEventListener('click', function() {
             qrScannerActive = false;
             clearInterval(qrScanInterval);
             
@@ -333,8 +333,8 @@
             qrVideoEl.style.display = 'none';
             qrScanOverlay.style.display = 'none';
             qrPlaceholderEl.style.display = 'flex';
-            startQRScannerBtn.style.display = 'block';
-            stopQRScannerBtn.style.display = 'none';
+            startQRBtn.style.display = 'block';
+            stopQRBtn.style.display = 'none';
             
             showStatus('Scanner stopped', 'info');
         });
