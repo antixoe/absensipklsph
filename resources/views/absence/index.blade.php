@@ -53,10 +53,10 @@
                         <i class="bi bi-qr-code" style="font-size: 80px;"></i>
                     </div>
                 </div>
-                <button type="button" id="start-qr-scanner-btn" class="btn" style="width: 100%; margin-top: 15px; padding: 10px 15px;">
+                <button type="button" id="startQRBtn" style="width: 100%; margin-top: 15px; padding: 12px 15px; background: #f97316; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">
                     <i class="bi bi-camera" style="margin-right: 8px;"></i>Start QR Scanner
                 </button>
-                <button type="button" id="stop-qr-scanner-btn" class="btn btn-secondary" style="width: 100%; margin-top: 10px; padding: 10px 15px; display: none;">
+                <button type="button" id="stopQRBtn" style="width: 100%; margin-top: 10px; padding: 12px 15px; background: #6b7280; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; display: none;">
                     <i class="bi bi-stop-circle" style="margin-right: 8px;"></i>Stop Scanner
                 </button>
             </div>
@@ -208,8 +208,8 @@
         const qrCanvasEl = document.getElementById('qr-canvas');
         const qrPlaceholderEl = document.getElementById('qr-placeholder');
         const qrScanOverlay = document.getElementById('qr-scan-overlay');
-        const startQRScannerBtn = document.getElementById('start-qr-scanner-btn');
-        const stopQRScannerBtn = document.getElementById('stop-qr-scanner-btn');
+        const startQRBtn = document.getElementById('startQRBtn');
+        const stopQRBtn = document.getElementById('stopQRBtn');
         
         // Submit Button
         const submitBtnEl = document.getElementById('submit-attendance-btn');
@@ -218,9 +218,9 @@
         @if($currentUserStudent && $todayAbsence)
             // User already submitted, disable form
             step1Container.style.opacity = '0.5';
-            startQRScannerBtn.disabled = true;
-            startQRScannerBtn.style.opacity = '0.5';
-            startQRScannerBtn.style.cursor = 'not-allowed';
+            startQRBtn.disabled = true;
+            startQRBtn.style.opacity = '0.5';
+            startQRBtn.style.cursor = 'not-allowed';
             submitBtnEl.style.display = 'none';
         @endif
 
