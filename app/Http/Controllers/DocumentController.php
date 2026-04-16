@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Services\ActivityLoggerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -46,7 +47,7 @@ class DocumentController extends Controller
         $fileName = time() . '_' . $file->getClientOriginalName();
         $filePath = $file->storeAs('documents', $fileName, 'public');
 
-        Document::create([
+        $document = Document::create([
             'student_id' => $student->id,
             'document_name' => $validated['title'],
             'description' => $validated['description'],
@@ -58,6 +59,14 @@ class DocumentController extends Controller
             'status' => 'pending',
             'upload_date' => now()->toDateString(),
         ]);
+
+        // Log the activity
+        ActivityLoggerService::log(
+            'uploaded_document',
+            'document',
+            $document->id,
+            "Uploaded document '{$validated['title']}' (Type: {$validated['document_type']})"
+        );
 
         return redirect('/documents')->with('success', 'Document uploaded successfully!');
     }
@@ -93,11 +102,27 @@ class DocumentController extends Controller
             'document_type' => ['required', 'string', 'max:100'],
         ]);
 
+        $oldData = [
+            'document_name' => $document->document_name,
+            'description' => $document->description,
+            'document_type' => $document->document_type,
+        ];
+
         $document->update([
             'document_name' => $validated['title'],
             'description' => $validated['description'],
             'document_type' => $validated['document_type'],
         ]);
+
+        // Log the activity
+        ActivityLoggerService::logChange(
+            'updated_document',
+            'document',
+            $document->id,
+            $oldData,
+            $validated,
+            "Updated document '{$validated['title']}'"
+        );
 
         return redirect('/documents')->with('success', 'Document updated successfully!');
     }
@@ -109,11 +134,23 @@ class DocumentController extends Controller
             abort(403);
         }
 
+        $documentName = $document->document_name;
+        $documentId = $document->id;
+
         if (Storage::disk('public')->exists($document->file_path)) {
             Storage::disk('public')->delete($document->file_path);
         }
 
         $document->delete();
+
+        // Log the activity
+        ActivityLoggerService::log(
+            'deleted_document',
+            'document',
+            $documentId,
+            "Deleted document '{$documentName}'"
+        );
+
         return redirect('/documents')->with('success', 'Document deleted successfully!');
     }
 
@@ -123,6 +160,14 @@ class DocumentController extends Controller
         if ($document->student_id !== $student->id) {
             abort(403);
         }
+
+        // Log the activity
+        ActivityLoggerService::log(
+            'downloaded_document',
+            'document',
+            $document->id,
+            "Downloaded document '{$document->document_name}'"
+        );
 
         return Storage::disk('public')->download($document->file_path, $document->file_name);
     }

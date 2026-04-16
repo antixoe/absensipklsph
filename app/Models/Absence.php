@@ -24,11 +24,15 @@ class Absence extends Model
         'approved_notes',
         'approved_at',
         'approved_by',
+        'qr_code_id',
+        'scanned_qr_at',
+        'qr_code',
     ];
 
     protected $dates = [
         'absence_date',
         'approved_at',
+        'scanned_qr_at',
         'created_at',
         'updated_at',
     ];
@@ -38,6 +42,7 @@ class Absence extends Model
         'longitude' => 'float',
         'absence_date' => 'datetime',
         'approved_at' => 'datetime',
+        'scanned_qr_at' => 'datetime',
     ];
 
     /**
@@ -54,5 +59,13 @@ class Absence extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Get the QR code if this absence was marked via QR scan.
+     */
+    public function qrCode(): BelongsTo
+    {
+        return $this->belongsTo(QRCode::class, 'qr_code_id');
     }
 }

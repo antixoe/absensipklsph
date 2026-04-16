@@ -300,6 +300,65 @@
             background: #f8f9fa;
         }
 
+        /* Filter Section */
+        .filter-section {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .filter-section h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 1.5rem 0;
+        }
+
+        .filter-section form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .filter-section input,
+        .filter-section select {
+            width: 100%;
+            padding: 0.6rem 0.9rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        .filter-section input:focus,
+        .filter-section select:focus {
+            outline: none;
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+
+        .filter-section input::placeholder {
+            color: #adb5bd;
+        }
+
+        .filter-section label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .filter-section form {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Modal */
         .modal-overlay {
             display: none;
@@ -498,6 +557,71 @@
         </div>
     </div>
 
+    <!-- Search & Filter Section -->
+    <div class="filter-section">
+        <h3><i class="bi bi-funnel" style="margin-right: 0.5rem;"></i>Search & Filter</h3>
+
+        <form method="GET" action="{{ route('settings.index') }}">
+            <!-- Search Input -->
+            <div>
+                <label><i class="bi bi-search" style="margin-right: 0.25rem;"></i>Search</label>
+                <input type="text" name="search" placeholder="Search by user, action..." value="{{ request('search') }}">
+            </div>
+
+            <!-- Filter by Action -->
+            <div>
+                <label><i class="bi bi-lightning" style="margin-right: 0.25rem;"></i>Action</label>
+                <select name="action_filter">
+                    <option value="">All Actions</option>
+                    @if(isset($availableActions) && $availableActions->count() > 0)
+                        @foreach($availableActions as $action)
+                            <option value="{{ strtolower(str_replace(' ', '_', $action)) }}" {{ request('action_filter') === strtolower(str_replace(' ', '_', $action)) ? 'selected' : '' }}>
+                                {{ $action }}
+                            </option>
+                        @endforeach
+                    @endif
+                </select>
+            </div>
+
+            <!-- Filter by User -->
+            <div>
+                <label><i class="bi bi-person" style="margin-right: 0.25rem;"></i>User</label>
+                <select name="user_filter">
+                    <option value="">All Users</option>
+                    @if(isset($availableUsers) && $availableUsers->count() > 0)
+                        @foreach($availableUsers as $u)
+                            <option value="{{ $u->id }}" {{ request('user_filter') == $u->id ? 'selected' : '' }}>
+                                {{ $u->name }} ({{ $u->email }})
+                            </option>
+                        @endforeach
+                    @endif
+                </select>
+            </div>
+
+            <!-- Date From -->
+            <div>
+                <label><i class="bi bi-calendar" style="margin-right: 0.25rem;"></i>From Date</label>
+                <input type="date" name="date_from" value="{{ request('date_from') }}">
+            </div>
+
+            <!-- Date To -->
+            <div>
+                <label><i class="bi bi-calendar" style="margin-right: 0.25rem;"></i>To Date</label>
+                <input type="date" name="date_to" value="{{ request('date_to') }}">
+            </div>
+
+            <!-- Buttons -->
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    <i class="bi bi-funnel" style="margin-right: 0.25rem;"></i>Apply
+                </button>
+                <a href="{{ route('settings.index') }}" class="btn btn-secondary" style="flex: 1; text-align: center;">
+                    <i class="bi bi-x-circle" style="margin-right: 0.25rem;"></i>Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
     <!-- Activity Log Card -->
     <div class="log-card">
         @if($activityLogs && $activityLogs->count() > 0)
@@ -615,9 +739,34 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
-            <div class="pagination-container">
-                {{ $activityLogs->links('pagination::bootstrap-4') ?? '' }}
+            <!-- Pagination Info & Controls -->
+            <div class="pagination-container" style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-top: 1px solid #e9ecef; background: white;">
+                <div style="font-size: 0.9rem; color: #6c757d;">
+                    Showing <strong>{{ ($activityLogs->currentPage() - 1) * $activityLogs->perPage() + 1 }}</strong> to 
+                    <strong>{{ min($activityLogs->currentPage() * $activityLogs->perPage(), $activityLogs->total()) }}</strong> 
+                    of <strong>{{ $activityLogs->total() }}</strong> results
+                </div>
+
+                <!-- Pagination Links -->
+                <div style="display: flex; justify-content: center; gap: 0.25rem; flex-wrap: wrap;">
+                    {{ $activityLogs->links('pagination::bootstrap-4') ?? '' }}
+                </div>
+
+                <!-- Per Page Selector -->
+                <form method="GET" action="{{ route('settings.index') }}" style="display: inline; font-size: 0.9rem;">
+                    @foreach(request()->query() as $key => $value)
+                        @if($key !== 'page')
+                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                        @endif
+                    @endforeach
+                    Show 
+                    <select name="per_page" onchange="this.form.submit()" style="padding: 0.3rem 0.6rem; border: 1px solid #dee2e6; border-radius: 0.25rem; font-size: 0.85rem; cursor: pointer;">
+                        <option value="25" {{ request('per_page', 50) == 25 ? 'selected' : '' }}>25</option>
+                        <option value="50" {{ request('per_page', 50) == 50 ? 'selected' : '' }}>50</option>
+                        <option value="100" {{ request('per_page', 50) == 100 ? 'selected' : '' }}>100</option>
+                    </select>
+                    per page
+                </form>
             </div>
         @else
             <div class="empty-state">

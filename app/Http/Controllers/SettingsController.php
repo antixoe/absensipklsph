@@ -10,30 +10,98 @@ class SettingsController extends Controller
     /**
      * Show settings page with activity logs
      */
-    public function index()
+    public function index(Request $request)
     {
+        $user = auth()->user();
+        $isAdmin = $user->hasRole('admin');
+
+        // For non-admin users, show the enhanced student settings page
+        if (!$isAdmin) {
+            $userLogs = ActivityLog::where('user_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+
+            return view('settings.student-settings', compact('user', 'userLogs'));
+        }
+
+        // For admin users, show the admin activity logs page
         $activityLogs = collect();
         $totalActions = 0;
         $todayActions = 0;
         $userActions = 0;
+        $availableActions = collect();
+        $availableUsers = collect();
 
         try {
-            // Get active activity logs - 50 per page
-            $activityLogs = ActivityLog::with('user')
-                ->active()
-                ->orderBy('created_at', 'desc')
-                ->paginate(50);
+            // Get per page value from request, default to 50
+            $perPage = (int) $request->get('per_page', 50);
+            $perPage = in_array($perPage, [25, 50, 100]) ? $perPage : 50;
+
+            // Build query with search and filters
+            $query = ActivityLog::with('user')
+                ->active();
+
+            // Search by user name or email
+            if ($request->filled('search')) {
+                $search = $request->get('search');
+                $query->whereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                })->orWhere('action', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            }
+
+            // Filter by action type
+            if ($request->filled('action_filter')) {
+                $query->where('action', $request->get('action_filter'));
+            }
+
+            // Filter by date range
+            if ($request->filled('date_from')) {
+                $query->whereDate('created_at', '>=', $request->get('date_from'));
+            }
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->get('date_to'));
+            }
+
+            // Filter by user
+            if ($request->filled('user_filter')) {
+                $query->where('user_id', $request->get('user_filter'));
+            }
 
             // Get stats
             $totalActions = ActivityLog::active()->count();
             $todayActions = ActivityLog::active()->whereDate('created_at', today())->count();
             $userActions = ActivityLog::active()->where('user_id', auth()->id())->count();
+
+            // Get distinct actions for filter dropdown
+            $availableActions = ActivityLog::active()
+                ->distinct()
+                ->pluck('action')
+                ->map(fn($action) => str_replace('_', ' ', ucfirst($action)))
+                ->sort();
+
+            // Get distinct users for filter dropdown
+            $availableUsers = \App\Models\User::where(function ($q) {
+                $q->has('activityLogs');
+            })->get();
+
+            // Get active activity logs with pagination
+            $activityLogs = $query->orderBy('created_at', 'desc')->paginate($perPage)->withQueryString();
         } catch (\Exception $e) {
             // Table might not exist yet - gracefully handle
             \Log::warning('Activity logs table error: ' . $e->getMessage());
         }
 
-        return view('settings.index', compact('activityLogs', 'totalActions', 'todayActions', 'userActions'));
+        return view('settings.index', compact(
+            'activityLogs', 
+            'totalActions', 
+            'todayActions', 
+            'userActions',
+            'availableActions',
+            'availableUsers'
+        ));
     }
 
     /**
@@ -217,4 +285,65 @@ class SettingsController extends Controller
         return response()
             ->streamDownload(fn() => print($csvContent), 'activity-logs-' . now()->format('Y-m-d-His') . '.csv');
     }
+
+    /**
+     * Update user profile information
+     */
+    public function updateProfile(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email,' . auth()->id()],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        auth()->user()->update($validated);
+
+        ActivityLog::log(
+            'updated_profile',
+            'user',
+            auth()->id(),
+            'Updated profile information'
+        );
+
+        return redirect()->route('settings.index')->with('success', 'Profile updated successfully!');
+    }
+
+    /**
+     * Update password
+     */
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        auth()->user()->update([
+            'password' => bcrypt($validated['password']),
+        ]);
+
+        ActivityLog::log(
+            'changed_password',
+            'user',
+            auth()->id(),
+            'Changed password'
+        );
+
+        return redirect()->route('settings.index')->with('success', 'Password changed successfully!');
+    }
+
+    /**
+     * Get user's activity logs (personal logs only, not admin-only)
+     */
+    public function getUserActivityLogs()
+    {
+        $userLogs = ActivityLog::where('user_id', auth()->id())
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('settings.user-activity', compact('userLogs'));
+    }
 }
+

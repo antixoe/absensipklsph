@@ -12,6 +12,8 @@ use App\Http\Controllers\AbsenceController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\QRCodeController;
 
 // Guest routes
 Route::middleware('guest')->group(function () {
@@ -55,8 +57,30 @@ Route::middleware('auth')->group(function () {
     Route::patch('/absence/{absence}/approve', [AbsenceController::class, 'approve'])->name('absence.approve');
     Route::patch('/absence/{absence}/reject', [AbsenceController::class, 'reject'])->name('absence.reject');
     
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'delete'])->name('notifications.delete');
+    Route::post('/notifications/delete-all', [NotificationController::class, 'deleteAll'])->name('notifications.deleteAll');
+    
+    // QR Code Routes
+    Route::get('/qrcode', [QRCodeController::class, 'index'])->name('qrcode.index');
+    Route::get('/qrcode/create', [QRCodeController::class, 'create'])->name('qrcode.create');
+    Route::post('/qrcode', [QRCodeController::class, 'store'])->name('qrcode.store');
+    Route::get('/qrcode/{qrCode}', [QRCodeController::class, 'show'])->name('qrcode.show');
+    Route::patch('/qrcode/{qrCode}/deactivate', [QRCodeController::class, 'deactivate'])->name('qrcode.deactivate');
+    Route::get('/qrcode/{qrCode}/download', [QRCodeController::class, 'downloadQRImage'])->name('qrcode.download');
+    
+    // QR Code Scanner (Student)
+    Route::get('/qrcode-scanner', [QRCodeController::class, 'scanner'])->name('qrcode.scanner');
+    Route::post('/qrcode-scan', [QRCodeController::class, 'scan'])->name('qrcode.scan');
+    
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export-excel', [ReportController::class, 'exportExcel'])->name('reports.export-excel');
+    Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+    Route::get('/reports/print', [ReportController::class, 'printReport'])->name('reports.print');
     
     // Logbook CRUD
     Route::get('/logbook', [LogbookEntryController::class, 'index'])->name('logbook.index');
@@ -80,6 +104,8 @@ Route::middleware('auth')->group(function () {
     
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings/update-profile', [SettingsController::class, 'updateProfile'])->name('settings.updateProfile');
+    Route::post('/settings/update-password', [SettingsController::class, 'updatePassword'])->name('settings.updatePassword');
     Route::post('/settings/clear-logs', [SettingsController::class, 'clearLogs'])->name('settings.clearLogs');
     Route::get('/settings/export-logs', [SettingsController::class, 'exportLogs'])->name('settings.exportLogs');
     Route::get('/settings/trash', [SettingsController::class, 'trash'])->name('settings.trash');
@@ -115,6 +141,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/users/{user}/edit', [UserController::class, 'edit'])->name('admin.users.edit');
         Route::put('/admin/users/{user}', [UserController::class, 'update'])->name('admin.users.update');
         Route::delete('/admin/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+        Route::post('/admin/users/bulk-action', [UserController::class, 'bulkAction'])->name('admin.users.bulk-action');
+        
+        // Users Trash Management
+        Route::get('/admin/users-trash', [UserController::class, 'trash'])->name('admin.users.trash');
+        Route::post('/admin/users/{userId}/restore', [UserController::class, 'restore'])->name('admin.users.restore');
+        Route::delete('/admin/users/{userId}/force-delete', [UserController::class, 'forceDelete'])->name('admin.users.force-delete');
         
         // API endpoints for modal
         Route::get('/admin/users/{user}/details', [UserController::class, 'getDetails'])->name('admin.users.details');

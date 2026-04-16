@@ -372,6 +372,9 @@
             <p>Manage deleted activity logs and restore if needed</p>
         </div>
         <div class="page-intro-actions">
+            <a href="{{ route('settings.index') }}" class="btn" style="background: #6c757d; color: white; display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; text-decoration: none; border-radius: 6px;">
+                <i class="bi bi-arrow-left"></i>Back
+            </a>
             @if($deletedLogs && $deletedLogs->count() > 0)
                 <form method="POST" action="{{ route('settings.emptyTrash') }}" style="display: inline;" onsubmit="return confirm('Are you sure? This will permanently delete all logs in trash. This cannot be undone.');">
                     @csrf

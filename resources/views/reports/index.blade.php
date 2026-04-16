@@ -9,21 +9,39 @@
 
     <!-- Date Range Filter -->
     <div class="card" style="margin-bottom: 20px;">
-        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <label style="font-weight: 600;">View data for:</label>
-            <div style="display: flex; gap: 10px;">
-                <a href="{{ route('reports.index', ['range' => 7]) }}" 
-                   class="btn {{ $dateRange == 7 ? '' : 'btn-secondary' }}"
-                   style="padding: 8px 16px; font-size: 13px;">7 Days</a>
-                <a href="{{ route('reports.index', ['range' => 30]) }}" 
-                   class="btn {{ $dateRange == 30 ? '' : 'btn-secondary' }}"
-                   style="padding: 8px 16px; font-size: 13px;">30 Days</a>
-                <a href="{{ route('reports.index', ['range' => 90]) }}" 
-                   class="btn {{ $dateRange == 90 ? '' : 'btn-secondary' }}"
-                   style="padding: 8px 16px; font-size: 13px;">90 Days</a>
-                <a href="{{ route('reports.index', ['range' => 365]) }}" 
-                   class="btn {{ $dateRange == 365 ? '' : 'btn-secondary' }}"
-                   style="padding: 8px 16px; font-size: 13px;">1 Year</a>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label style="font-weight: 600; white-space: nowrap;">View data for:</label>
+                <div style="display: flex; gap: 10px;">
+                    <a href="{{ route('reports.index', ['range' => 7]) }}" 
+                       class="btn {{ $dateRange == 7 ? '' : 'btn-secondary' }}"
+                       style="padding: 8px 16px; font-size: 13px;">7 Days</a>
+                    <a href="{{ route('reports.index', ['range' => 30]) }}" 
+                       class="btn {{ $dateRange == 30 ? '' : 'btn-secondary' }}"
+                       style="padding: 8px 16px; font-size: 13px;">30 Days</a>
+                    <a href="{{ route('reports.index', ['range' => 90]) }}" 
+                       class="btn {{ $dateRange == 90 ? '' : 'btn-secondary' }}"
+                       style="padding: 8px 16px; font-size: 13px;">90 Days</a>
+                    <a href="{{ route('reports.index', ['range' => 365]) }}" 
+                       class="btn {{ $dateRange == 365 ? '' : 'btn-secondary' }}"
+                       style="padding: 8px 16px; font-size: 13px;">1 Year</a>
+                </div>
+            </div>
+
+            <!-- Export Buttons -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button onclick="window.print()" class="btn" title="Print Report" 
+                    style="padding: 8px 16px; font-size: 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    <i class="bi bi-printer" style="margin-right: 5px;"></i>Print
+                </button>
+                <a href="{{ route('reports.export-excel', ['range' => $dateRange]) }}" class="btn" title="Export to Excel"
+                    style="padding: 8px 16px; font-size: 12px; background-color: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;">
+                    <i class="bi bi-file-earmark-spreadsheet" style="margin-right: 5px;"></i>Excel
+                </a>
+                <a href="{{ route('reports.export-pdf', ['range' => $dateRange]) }}" class="btn" title="Export as PDF"
+                    style="padding: 8px 16px; font-size: 12px; background-color: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;" target="_blank">
+                    <i class="bi bi-file-earmark-pdf" style="margin-right: 5px;"></i>PDF
+                </a>
             </div>
         </div>
     </div>

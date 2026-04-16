@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Attendance;
 use App\Models\Student;
+use App\Models\Absence;
+use App\Models\LogbookEntry;
+use App\Models\Document;
+use App\Models\Activity;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -18,7 +22,16 @@ class DashboardController extends Controller
         // Fetch absence data for the chart
         $absenceData = $this->getAbsenceData();
 
-        return view('dashboard.index', compact('user', 'role', 'absenceData'));
+        // Fetch statistics for the current user
+        $studentId = Auth::user()->student->id ?? 0;
+        $stats = [
+            'absenceCount' => Absence::where('student_id', $studentId)->count() ?? 0,
+            'logbookCount' => LogbookEntry::where('student_id', $studentId)->count() ?? 0,
+            'documentCount' => Document::where('student_id', $studentId)->count() ?? 0,
+            'activityCount' => Activity::where('student_id', $studentId)->count() ?? 0,
+        ];
+
+        return view('dashboard.index', compact('user', 'role', 'absenceData', 'stats'));
     }
 
     /**

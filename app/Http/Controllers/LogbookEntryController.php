@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LogbookEntry;
+use App\Services\ActivityLoggerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -44,7 +45,7 @@ class LogbookEntryController extends Controller
             'hours_worked' => ['required', 'numeric', 'min:0', 'max:24'],
         ]);
 
-        LogbookEntry::create([
+        $entry = LogbookEntry::create([
             'student_id' => $student->id,
             'entry_date' => $validated['date'],
             'title' => $validated['title'],
@@ -55,6 +56,14 @@ class LogbookEntryController extends Controller
             'hours_worked' => $validated['hours_worked'],
             'status' => 'draft',
         ]);
+
+        // Log the activity
+        ActivityLoggerService::log(
+            'created_logbook_entry',
+            'logbook_entry',
+            $entry->id,
+            "Created logbook entry '{$validated['title']}' for {$validated['date']}"
+        );
 
         return redirect('/logbook')->with('success', 'Logbook entry created successfully!');
     }
@@ -94,6 +103,16 @@ class LogbookEntryController extends Controller
             'hours_worked' => ['required', 'numeric', 'min:0', 'max:24'],
         ]);
 
+        $oldData = [
+            'entry_date' => $entry->entry_date->toDateString(),
+            'title' => $entry->title,
+            'description' => $entry->description,
+            'achievements' => $entry->achievements,
+            'challenges' => $entry->challenges,
+            'learning_outcomes' => $entry->learning_outcomes,
+            'hours_worked' => $entry->hours_worked,
+        ];
+
         $entry->update([
             'entry_date' => $validated['date'],
             'title' => $validated['title'],
@@ -103,6 +122,16 @@ class LogbookEntryController extends Controller
             'learning_outcomes' => $validated['learning_outcomes'],
             'hours_worked' => $validated['hours_worked'],
         ]);
+
+        // Log the activity
+        ActivityLoggerService::logChange(
+            'updated_logbook_entry',
+            'logbook_entry',
+            $entry->id,
+            $oldData,
+            $validated,
+            "Updated logbook entry '{$validated['title']}'"
+        );
 
         return redirect('/logbook')->with('success', 'Logbook entry updated successfully!');
     }
@@ -114,7 +143,19 @@ class LogbookEntryController extends Controller
             abort(403);
         }
 
+        $entryTitle = $entry->title;
+        $entryId = $entry->id;
+
         $entry->delete();
+
+        // Log the activity
+        ActivityLoggerService::log(
+            'deleted_logbook_entry',
+            'logbook_entry',
+            $entryId,
+            "Deleted logbook entry '{$entryTitle}'"
+        );
+
         return redirect('/logbook')->with('success', 'Logbook entry deleted successfully!');
     }
 
@@ -126,6 +167,15 @@ class LogbookEntryController extends Controller
         }
 
         $entry->update(['status' => 'submitted']);
+
+        // Log the activity
+        ActivityLoggerService::log(
+            'submitted_logbook_entry',
+            'logbook_entry',
+            $entry->id,
+            "Submitted logbook entry '{$entry->title}' for approval"
+        );
+
         return redirect('/logbook')->with('success', 'Logbook entry submitted for approval!');
     }
 }

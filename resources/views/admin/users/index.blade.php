@@ -22,6 +22,9 @@
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span><i class="bi bi-list" style="margin-right: 8px;"></i>Users List</span>
             <div style="display: flex; gap: 10px;">
+                <a href="{{ route('admin.users.trash') }}" class="btn btn-secondary" title="View Deleted Users" style="padding: 8px 16px; font-size: 12px; background-color: #6c757d; color: white; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center;">
+                    <i class="bi bi-trash" style="margin-right: 5px;"></i>Trash
+                </a>
                 <a href="{{ route('admin.users.import-form') }}" class="btn btn-info" style="padding: 8px 16px; font-size: 12px;">
                     <i class="bi bi-file-earmark-excel" style="margin-right: 5px;"></i>Import from Excel
                 </a>
@@ -80,10 +83,119 @@
             </div>
         </form>
 
+        <!-- Bulk Actions Section -->
+        <div id="bulkActionsContainer" style="display: none; margin-top: 20px; margin-bottom: 20px; padding: 20px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; border: 2px solid #fcd34d; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.1);">
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <span style="font-weight: 700; color: #9a3412; font-size: 14px; display: flex; align-items: center;">
+                    <i class="bi bi-check2-circle" style="margin-right: 8px; font-size: 18px;"></i>
+                    <span id="selectedCount">0</span> user(s) selected
+                </span>
+                
+                <select id="bulkActionSelect" style="
+                    padding: 10px 14px; 
+                    border: 2px solid #f59e0b; 
+                    border-radius: 8px; 
+                    font-size: 14px; 
+                    font-weight: 500;
+                    background: white;
+                    color: #1f2937;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    appearance: none;
+                    background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f59e0b%22 stroke-width=%222%22%3E%3Cpolyline points=%226 9 12 15 18 9%22%3E%3C/polyline%3E%3C/svg%3E');
+                    background-repeat: no-repeat;
+                    background-position: right 8px center;
+                    background-size: 20px;
+                    padding-right: 36px;
+                    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
+                " 
+                onmouseover="this.style.borderColor='#d97706'; this.style.boxShadow='0 2px 8px rgba(217, 119, 6, 0.25)';" 
+                onmouseout="this.style.borderColor='#f59e0b'; this.style.boxShadow='0 2px 6px rgba(245, 158, 11, 0.15)';">
+                    <option value="" style="color: #9ca3af;">-- Select Action --</option>
+                    <option value="activate" style="color: #10b981;">✓ Activate</option>
+                    <option value="deactivate" style="color: #ef4444;">✗ Deactivate</option>
+                    <option value="change_role" style="color: #3b82f6;">⚙ Change Role</option>
+                    <option value="delete" style="color: #991b1b;">🗑 Delete</option>
+                </select>
+
+                <select id="roleSelect" style="
+                    display: none;
+                    padding: 10px 14px; 
+                    border: 2px solid #3b82f6; 
+                    border-radius: 8px; 
+                    font-size: 14px; 
+                    font-weight: 500;
+                    background: white;
+                    color: #1f2937;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    appearance: none;
+                    background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%233b82f6%22 stroke-width=%222%22%3E%3Cpolyline points=%226 9 12 15 18 9%22%3E%3C/polyline%3E%3C/svg%3E');
+                    background-repeat: no-repeat;
+                    background-position: right 8px center;
+                    background-size: 20px;
+                    padding-right: 36px;
+                    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+                " 
+                onmouseover="this.style.borderColor='#2563eb'; this.style.boxShadow='0 2px 8px rgba(37, 99, 235, 0.25)';" 
+                onmouseout="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 2px 6px rgba(59, 130, 246, 0.15)';">
+                    <option value="" style="color: #9ca3af;">-- Select Role --</option>
+                    @foreach ($roles as $role)
+                        <option value="{{ $role->id }}" style="color: #3b82f6;">{{ ucfirst(str_replace('_', ' ', $role->name)) }}</option>
+                    @endforeach
+                </select>
+
+                <button type="button" onclick="performBulkAction()" style="
+                    padding: 10px 20px; 
+                    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+                    color: white; 
+                    border: none; 
+                    border-radius: 8px; 
+                    cursor: pointer; 
+                    font-size: 14px;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
+                    white-space: nowrap;
+                "
+                onmouseover="this.style.background='linear-gradient(135deg, #fb923c 0%, #f97316 100%)'; this.style.boxShadow='0 6px 16px rgba(249, 115, 22, 0.4)'; this.style.transform='translateY(-2px)';"
+                onmouseout="this.style.background='linear-gradient(135deg, #f97316 0%, #ea580c 100%)'; this.style.boxShadow='0 4px 10px rgba(249, 115, 22, 0.3)'; this.style.transform='translateY(0)';">
+                    <i class="bi bi-lightning-fill"></i>Apply
+                </button>
+
+                <button type="button" onclick="clearSelection()" style="
+                    padding: 10px 20px; 
+                    background: white;
+                    color: #666; 
+                    border: 2px solid #d1d5db; 
+                    border-radius: 8px; 
+                    cursor: pointer; 
+                    font-size: 14px;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+                    white-space: nowrap;
+                "
+                onmouseover="this.style.background='#f3f4f6'; this.style.borderColor='#9ca3af'; this.style.boxShadow='0 4px 10px rgba(0, 0, 0, 0.1)';"
+                onmouseout="this.style.background='white'; this.style.borderColor='#d1d5db'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.05)';">
+                    <i class="bi bi-x-circle"></i>Clear
+                </button>
+            </div>
+        </div>
+
         <div style="overflow-x: auto; margin-top: 20px;">
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 12px; text-align: center; width: 40px;">
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="width: 18px; height: 18px; cursor: pointer;">
+                        </th>
                         <th style="padding: 12px; text-align: left;">Name</th>
                         <th style="padding: 12px; text-align: left;">Email</th>
                         <th style="padding: 12px; text-align: left;">Phone</th>
@@ -95,6 +207,9 @@
                 <tbody>
                     @forelse ($users as $user)
                         <tr style="border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 12px; text-align: center;">
+                                <input type="checkbox" class="userCheckbox" value="{{ $user->id }}" onchange="updateSelectedCount()" style="width: 18px; height: 18px; cursor: pointer;">
+                            </td>
                             <td style="padding: 12px; font-weight: 600;">{{ $user->name }}</td>
                             <td style="padding: 12px;">{{ $user->email }}</td>
                             <td style="padding: 12px;">{{ $user->phone ?? '-' }}</td>
@@ -128,7 +243,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" style="padding: 20px; text-align: center; color: #999;">
+                            <td colspan="7" style="padding: 20px; text-align: center; color: #999;">
                                 <i class="bi bi-inbox" style="margin-right: 8px;"></i>No users found
                             </td>
                         </tr>
@@ -626,5 +741,142 @@
                 closeActionModal();
             }
         });
+
+        // Bulk Actions Functions
+        function toggleSelectAll(checkbox) {
+            const userCheckboxes = document.querySelectorAll('.userCheckbox');
+            userCheckboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.userCheckbox:checked').length;
+            const container = document.getElementById('bulkActionsContainer');
+            const countSpan = document.getElementById('selectedCount');
+            
+            countSpan.textContent = selected;
+            
+            if (selected > 0) {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+                document.getElementById('selectAll').checked = false;
+            }
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.userCheckbox').forEach(cb => {
+                cb.checked = false;
+            });
+            document.getElementById('selectAll').checked = false;
+            document.getElementById('bulkActionsContainer').style.display = 'none';
+            document.getElementById('bulkActionSelect').value = '';
+            document.getElementById('roleSelect').style.display = 'none';
+        }
+
+        document.getElementById('bulkActionSelect').addEventListener('change', function() {
+            const roleSelect = document.getElementById('roleSelect');
+            if (this.value === 'change_role') {
+                roleSelect.style.display = 'block';
+                roleSelect.required = true;
+            } else {
+                roleSelect.style.display = 'none';
+                roleSelect.required = false;
+                roleSelect.value = '';
+            }
+        });
+
+        function performBulkAction() {
+            const action = document.getElementById('bulkActionSelect').value;
+            
+            if (!action) {
+                alert('Please select an action');
+                return;
+            }
+
+            const selectedIds = Array.from(document.querySelectorAll('.userCheckbox:checked'))
+                .map(cb => cb.value);
+            
+            if (selectedIds.length === 0) {
+                alert('Please select at least one user');
+                return;
+            }
+
+            let confirmMessage = '';
+            switch (action) {
+                case 'activate':
+                    confirmMessage = `Activate ${selectedIds.length} user(s)?`;
+                    break;
+                case 'deactivate':
+                    confirmMessage = `Deactivate ${selectedIds.length} user(s)?`;
+                    break;
+                case 'change_role':
+                    const roleId = document.getElementById('roleSelect').value;
+                    if (!roleId) {
+                        alert('Please select a role');
+                        return;
+                    }
+                    confirmMessage = `Change role for ${selectedIds.length} user(s)?`;
+                    break;
+                case 'delete':
+                    confirmMessage = `Delete ${selectedIds.length} user(s)? This action cannot be undone.`;
+                    break;
+            }
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            const payload = {
+                action: action,
+                user_ids: selectedIds,
+            };
+
+            if (action === 'change_role') {
+                payload.role_id = document.getElementById('roleSelect').value;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            };
+
+            if (csrfToken) {
+                headers['X-CSRF-TOKEN'] = csrfToken.getAttribute('content');
+            }
+
+            // Show loading state
+            const applyBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent.includes('Apply'));
+            const originalText = applyBtn.textContent;
+            applyBtn.disabled = true;
+            applyBtn.innerHTML = '<i class="bi bi-hourglass-split" style="margin-right: 5px; animation: spin 1s linear infinite;"></i>Processing...';
+
+            fetch('{{ route("admin.users.bulk-action") }}', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'An error occurred'));
+                    applyBtn.disabled = false;
+                    applyBtn.textContent = originalText;
+                }
+            })
+            .catch(error => {
+                alert('Error performing bulk action: ' + error);
+                console.error('Error:', error);
+                applyBtn.disabled = false;
+                applyBtn.textContent = originalText;
+            });
+        }
     </script>
 @endsection

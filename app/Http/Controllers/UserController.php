@@ -42,7 +42,8 @@ class UserController extends Controller
             $query->where('status', $request->get('status'));
         }
 
-        $users = $query->paginate(10)->withQueryString();
+        // Order by newest users first
+        $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
         $roles = Role::all();
 
         return view('admin.users.index', compact('users', 'roles'));
@@ -175,7 +176,7 @@ class UserController extends Controller
     }
 
     /**
-     * Remove the specified user from database.
+     * Remove the specified user from database (soft delete).
      */
     public function destroy(User $user)
     {
@@ -187,7 +188,70 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('admin.users')
-            ->with('success', 'User deleted successfully!');
+            ->with('success', 'User deleted successfully! You can restore this user within 30 days.');
+    }
+
+    /**
+     * Restore a soft-deleted user.
+     */
+    public function restore($userId)
+    {
+        // Only admin can restore users
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $user = User::onlyTrashed()->findOrFail($userId);
+        $user->restore();
+
+        return redirect()->route('admin.users')
+            ->with('success', 'User ' . $user->name . ' has been restored successfully!');
+    }
+
+    /**
+     * Permanently delete a soft-deleted user.
+     */
+    public function forceDelete($userId)
+    {
+        // Only admin can permanently delete users
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $user = User::onlyTrashed()->findOrFail($userId);
+        $userName = $user->name;
+        $user->forceDelete();
+
+        return redirect()->route('admin.users')
+            ->with('success', 'User ' . $userName . ' has been permanently deleted.');
+    }
+
+    /**
+     * Show deleted (trashed) users.
+     */
+    public function trash(Request $request)
+    {
+        // Only admin can view trash
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $query = User::onlyTrashed()->with('role');
+
+        // Search by name or email
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Order by most recently deleted first
+        $trashedUsers = $query->orderBy('deleted_at', 'desc')->paginate(10)->withQueryString();
+        $roles = Role::all();
+
+        return view('admin.users.trash', compact('trashedUsers', 'roles'));
     }
 
     /**
@@ -355,5 +419,82 @@ class UserController extends Controller
             'success' => true,
             'message' => 'User updated successfully!'
         ]);
+    }
+
+    /**
+     * Perform bulk actions on multiple users.
+     */
+    public function bulkAction(Request $request)
+    {
+        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:delete,activate,deactivate,change_role'],
+            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['integer', 'exists:users,id'],
+            'role_id' => ['nullable', 'exists:roles,id'],
+        ]);
+
+        try {
+            $users = User::whereIn('id', $validated['user_ids'])->get();
+            $action = $validated['action'];
+            $count = 0;
+
+            foreach ($users as $user) {
+                // Prevent deleting the current admin user
+                if ($action === 'delete' && $user->id === Auth::id()) {
+                    continue;
+                }
+
+                switch ($action) {
+                    case 'delete':
+                        $user->delete();
+                        $count++;
+                        break;
+
+                    case 'activate':
+                        if ($user->status !== 'active') {
+                            $user->update(['status' => 'active']);
+                            $count++;
+                        }
+                        break;
+
+                    case 'deactivate':
+                        if ($user->id !== Auth::id() && $user->status !== 'inactive') {
+                            $user->update(['status' => 'inactive']);
+                            $count++;
+                        }
+                        break;
+
+                    case 'change_role':
+                        if (isset($validated['role_id'])) {
+                            $user->update(['role_id' => $validated['role_id']]);
+                            $count++;
+                        }
+                        break;
+                }
+            }
+
+            $actionLabel = match($action) {
+                'delete' => 'deleted',
+                'activate' => 'activated',
+                'deactivate' => 'deactivated',
+                'change_role' => 'updated',
+                default => 'processed'
+            };
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} user(s) successfully {$actionLabel}!",
+                'count' => $count
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -48,7 +48,7 @@
 
             <!-- Search Button -->
             <div style="display: flex; gap: 8px;">
-                <button type="submit" style="flex: 1; padding: 10px 16px; background: #3b82f6; color: white; border: none; 
+                <button type="submit" style="flex: 1; padding: 10px 16px; background: #f97316; color: white; border: none; 
                                             border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">
                     <i class="bi bi-search"></i> Search
                 </button>

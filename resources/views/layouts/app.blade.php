@@ -576,6 +576,14 @@
 
         <div class="navbar-nav">
             <a href="/dashboard" class="{{ request()->is('dashboard') ? 'active' : '' }}">Dashboard</a>
+            <a href="{{ route('notifications.index') }}" class="{{ request()->is('notifications*') ? 'active' : '' }}" style="position: relative;">
+                <i class="bi bi-bell" style="margin-right: 4px;"></i>Notifications
+                @if(auth()->user()->unreadNotifications->count() > 0)
+                    <span style="position: absolute; top: -5px; right: -10px; background: #ef4444; color: white; border-radius: 10px; padding: 2px 6px; font-size: 11px; font-weight: 700;">
+                        {{ auth()->user()->unreadNotifications->count() }}
+                    </span>
+                @endif
+            </a>
             @if(!auth()->user()->hasRole('admin'))
                 <a href="/absence" class="{{ request()->is('absence*') && !request()->is('absence/pending*') ? 'active' : '' }}">Absence</a>
             @endif
@@ -585,6 +593,9 @@
                 </a>
                 <a href="{{ route('absence.all') }}" class="{{ request()->is('absence/all*') ? 'active' : '' }}">
                     <i class="bi bi-list-check" style="margin-right: 4px;"></i>All Absences
+                </a>
+                <a href="{{ route('qrcode.index') }}" class="{{ request()->is('qrcode*') ? 'active' : '' }}">
+                    <i class="bi bi-qr-code" style="margin-right: 4px;"></i>QR Codes
                 </a>
             @endif
             @if(!auth()->user()->hasRole('student'))

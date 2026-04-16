@@ -6,6 +6,8 @@ use App\Models\Absence;
 use App\Models\Student;
 use App\Models\Role;
 use App\Models\ActivityLog;
+use App\Services\ActivityLoggerService;
+use App\Notifications\AbsenceApprovedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -83,24 +85,41 @@ class AbsenceController extends Controller
             return redirect()->back()->with('error', 'Admins cannot submit absences.');
         }
         
+        // Check if this is a QR code submission
+        $isQRSubmission = $request->input('method') === 'qr' || $request->has('qr_code');
+        
         try {
-            $validated = $request->validate([
-                'student_ids' => 'required|array',
-                'selfie' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-                'absence_date' => 'required|date',
-                'absence_time' => 'required|date_format:H:i',
-                'ip_address' => 'nullable|string',
-                'location_name' => 'nullable|string',
-                'notes' => 'nullable|string',
-            ]);
+            if ($isQRSubmission) {
+                // QR code submission doesn't require selfie
+                $validated = $request->validate([
+                    'student_ids' => 'required|array',
+                    'qr_code' => 'required|string',
+                    'ip_address' => 'nullable|string',
+                    'location_name' => 'nullable|string',
+                    'notes' => 'nullable|string',
+                    'absence_date' => 'nullable|date',
+                    'absence_time' => 'nullable|date_format:H:i',
+                ]);
+            } else {
+                // Selfie submission requires selfie image
+                $validated = $request->validate([
+                    'student_ids' => 'required|array',
+                    'selfie' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                    'ip_address' => 'nullable|string',
+                    'location_name' => 'nullable|string',
+                    'notes' => 'nullable|string',
+                    'absence_date' => 'nullable|date',
+                    'absence_time' => 'nullable|date_format:H:i',
+                ]);
+            }
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Absence validation error', $e->errors());
             return back()->withErrors($e->errors())->withInput();
         }
 
         try {
-            // Parse date and time
-            $absenceDatetime = Carbon::createFromFormat('Y-m-d H:i', $validated['absence_date'] . ' ' . $validated['absence_time']);
+            // Use real-time current date and time
+            $absenceDatetime = Carbon::now();
             
             // Get or create student record for current user
             $currentUserStudent = Student::where('user_id', $currentUser->id)->first();
@@ -145,8 +164,8 @@ class AbsenceController extends Controller
                 }
             }
 
-            // Store the selfie image
-            if ($request->hasFile('selfie')) {
+            // Store the selfie image (only for selfie submissions)
+            if (!$isQRSubmission && $request->hasFile('selfie')) {
                 $file = $request->file('selfie');
                 $selfieFilename = 'selfie_' . time() . '.' . $file->getClientOriginalExtension();
                 $file->storeAs('absences', $selfieFilename, 'public');
@@ -154,18 +173,36 @@ class AbsenceController extends Controller
 
             // Create absence records for each selected student
             foreach ($studentIds as $studentId) {
-                Absence::updateOrCreate(
+                $updateData = [
+                    'ip_address' => $validated['ip_address'] ?? null,
+                    'location_name' => $validated['location_name'] ?? null,
+                    'notes' => $validated['notes'] ?? null,
+                    'status' => 'pending',
+                ];
+                
+                // Add appropriate submission method data
+                if ($isQRSubmission) {
+                    $updateData['qr_code'] = $validated['qr_code'] ?? null;
+                    $updateData['scanned_qr_at'] = Carbon::now();
+                } else {
+                    $updateData['selfie_path'] = $selfieFilename ? 'absences/' . $selfieFilename : null;
+                }
+                
+                $absence = Absence::updateOrCreate(
                     [
                         'student_id' => $studentId,
                         'absence_date' => $absenceDatetime,
                     ],
-                    [
-                        'selfie_path' => $selfieFilename ? 'absences/' . $selfieFilename : null,
-                        'ip_address' => $validated['ip_address'] ?? null,
-                        'location_name' => $validated['location_name'] ?? null,
-                        'notes' => $validated['notes'] ?? null,
-                        'status' => 'pending',
-                    ]
+                    $updateData
+                );
+
+                // Log the activity
+                $method = $isQRSubmission ? 'QR Code' : 'Selfie';
+                ActivityLoggerService::log(
+                    'submitted_absence',
+                    'absence',
+                    $absence->id,
+                    "Submitted absence via $method for {$absenceDatetime->format('Y-m-d H:i')}"
                 );
             }
 
@@ -268,6 +305,14 @@ class AbsenceController extends Controller
                 $absenceId,
                 "Absence for student {$absence->student->user->name} on {$absence->absence_date->format('Y-m-d H:i')} was {$status}"
             );
+
+            // Send notification to student with admin's notes
+            $studentUser = $absence->student->user;
+            $studentUser->notify(new AbsenceApprovedNotification(
+                $absence,
+                $status,
+                $validated['notes'] ?? null
+            ));
         }
 
         $message = ucfirst($action) . 'd ' . count($validated['absence_ids']) . ' absence(s) successfully.';
