@@ -225,51 +225,58 @@
         @endif
 
         // ==================== QR SCANNING ====================
-        startQRScannerBtn.addEventListener('click', async function() {
-            try {
-                showStatus('Requesting camera access...', 'info');
-                
-                qrStream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                });
-                
-                qrVideoEl.srcObject = qrStream;
-                
-                // Ensure video starts playing
-                qrVideoEl.onloadedmetadata = () => {
-                    qrVideoEl.play().then(() => {
-                        console.log('Video playing');
-                        startScanning();
-                    }).catch(err => {
-                        console.error('Play error:', err);
-                        showStatus('Video playback error', 'error');
+        // Verify button element exists
+        if (!startQRScannerBtn) {
+            console.error('❌ QR Scanner button not found!');
+        } else {
+            console.log('✓ QR Scanner button found, attaching listener');
+            
+            startQRScannerBtn.addEventListener('click', async function() {
+                try {
+                    showStatus('Requesting camera access...', 'info');
+                    
+                    qrStream = await navigator.mediaDevices.getUserMedia({
+                        video: { 
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
                     });
-                };
-                
-                // Timeout for video loading
-                setTimeout(() => {
-                    if (!qrScannerActive) {
-                        showStatus('Camera not responding, please try again', 'warning');
-                    }
-                }, 3000);
-                
-                startQRScannerBtn.style.display = 'none';
-                stopQRScannerBtn.style.display = 'block';
-                qrPlaceholderEl.style.display = 'none';
-                qrVideoEl.style.display = 'block';
-                qrScanOverlay.style.display = 'block';
-                
-            } catch (error) {
-                showStatus('Camera access denied. Please enable permissions.', 'error');
-                console.error('Camera error:', error);
-                startQRScannerBtn.style.display = 'block';
-                stopQRScannerBtn.style.display = 'none';
-            }
-        });
+                    
+                    qrVideoEl.srcObject = qrStream;
+                    
+                    // Ensure video starts playing
+                    qrVideoEl.onloadedmetadata = () => {
+                        qrVideoEl.play().then(() => {
+                            console.log('Video playing');
+                            startScanning();
+                        }).catch(err => {
+                            console.error('Play error:', err);
+                            showStatus('Video playback error', 'error');
+                        });
+                    };
+                    
+                    // Timeout for video loading
+                    setTimeout(() => {
+                        if (!qrScannerActive) {
+                            showStatus('Camera not responding, please try again', 'warning');
+                        }
+                    }, 3000);
+                    
+                    startQRScannerBtn.style.display = 'none';
+                    stopQRScannerBtn.style.display = 'block';
+                    qrPlaceholderEl.style.display = 'none';
+                    qrVideoEl.style.display = 'block';
+                    qrScanOverlay.style.display = 'block';
+                    
+                } catch (error) {
+                    showStatus('Camera access denied. Please enable permissions.', 'error');
+                    console.error('Camera error:', error);
+                    startQRScannerBtn.style.display = 'block';
+                    stopQRScannerBtn.style.display = 'none';
+                }
+            });
+        }
 
         function startScanning() {
             qrScannerActive = true;
@@ -312,6 +319,7 @@
                     console.error('Scan error:', error);
                 }
             }, 200);
+            });
         }
 
         stopQRScannerBtn.addEventListener('click', function() {
