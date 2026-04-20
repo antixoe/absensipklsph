@@ -33,7 +33,7 @@ class AbsenceSubmittedNotification extends Notification
         $methodLabel = $this->submissionMethod === 'qr' ? 'QR Code' : 'Selfie';
         
         return [
-            'title' => '📋 New Absence Submitted',
+            'title' => 'New Absence Submitted',
             'message' => "{$this->student->name} has marked absence on {$this->absence->absence_date->format('M d, Y H:i')} via {$methodLabel}",
             'student_name' => $this->student->name,
             'student_id' => $this->student->id,
