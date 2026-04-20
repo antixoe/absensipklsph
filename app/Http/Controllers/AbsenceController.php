@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Absence;
 use App\Models\Student;
 use App\Models\Role;
-use App\Models\ActivityLog;
+use App\Models\User;
 use App\Services\ActivityLoggerService;
-use App\Notifications\AbsenceApprovedNotification;
+use App\Notifications\AbsenceSubmittedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -85,8 +84,8 @@ class AbsenceController extends Controller
             return redirect()->back()->with('error', 'Admins cannot submit absences.');
         }
         
-        // Check if this is a QR code submission
-        $isQRSubmission = $request->input('method') === 'qr' || $request->has('qr_code');
+        // Check if this is a QR code submission (method field takes priority)
+        $isQRSubmission = $request->input('method') === 'qr';
         
         try {
             if ($isQRSubmission) {
@@ -94,6 +93,8 @@ class AbsenceController extends Controller
                 $validated = $request->validate([
                     'student_ids' => 'required|array',
                     'qr_code' => 'required|string',
+                    'latitude' => 'nullable|numeric',
+                    'longitude' => 'nullable|numeric',
                     'ip_address' => 'nullable|string',
                     'location_name' => 'nullable|string',
                     'notes' => 'nullable|string',
@@ -105,6 +106,8 @@ class AbsenceController extends Controller
                 $validated = $request->validate([
                     'student_ids' => 'required|array',
                     'selfie' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                    'latitude' => 'nullable|numeric',
+                    'longitude' => 'nullable|numeric',
                     'ip_address' => 'nullable|string',
                     'location_name' => 'nullable|string',
                     'notes' => 'nullable|string',
@@ -113,7 +116,13 @@ class AbsenceController extends Controller
                 ]);
             }
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Absence validation error', $e->errors());
+            \Log::error('Absence validation error', [
+                'errors' => $e->errors(),
+                'request_data' => $request->except(['selfie', '_token']),
+                'method' => $request->input('method'),
+                'has_qr_code' => $request->has('qr_code'),
+                'has_selfie' => $request->hasFile('selfie'),
+            ]);
             return back()->withErrors($e->errors())->withInput();
         }
 
@@ -176,8 +185,10 @@ class AbsenceController extends Controller
                 $updateData = [
                     'ip_address' => $validated['ip_address'] ?? null,
                     'location_name' => $validated['location_name'] ?? null,
+                    'latitude' => $validated['latitude'] ?? null,
+                    'longitude' => $validated['longitude'] ?? null,
                     'notes' => $validated['notes'] ?? null,
-                    'status' => 'pending',
+                    'status' => 'approved',
                 ];
                 
                 // Add appropriate submission method data
@@ -196,19 +207,44 @@ class AbsenceController extends Controller
                     $updateData
                 );
 
-                // Log the activity
+                // Log the activity with detailed information
                 $method = $isQRSubmission ? 'QR Code' : 'Selfie';
+                $logData = [
+                    'submission_method' => $method,
+                    'student_id' => $studentId,
+                    'student_name' => Student::find($studentId)->user->name ?? 'Unknown',
+                    'qr_code_used' => $isQRSubmission ? ($validated['qr_code'] ?? 'N/A') : 'N/A',
+                    'selfie_saved' => !$isQRSubmission && $selfieFilename ? true : false,
+                    'location_name' => $validated['location_name'] ?? 'Not provided',
+                    'ip_address' => $validated['ip_address'] ?? 'Not provided',
+                    'latitude' => $validated['latitude'] ?? null,
+                    'longitude' => $validated['longitude'] ?? null,
+                ];
+                
                 ActivityLoggerService::log(
                     'submitted_absence',
                     'absence',
                     $absence->id,
-                    "Submitted absence via $method for {$absenceDatetime->format('Y-m-d H:i')}"
+                    "Submitted absence via $method for {$absenceDatetime->format('Y-m-d H:i')}",
+                    [],
+                    $logData
                 );
+                
+                \Log::info('Absence submitted', [
+                    'user_id' => Auth::id(),
+                    'student_id' => $studentId,
+                    'absence_id' => $absence->id,
+                    'method' => $method,
+                    'data' => $logData
+                ]);
+
+                // Send notifications to admins and teachers
+                $this->sendAbsenceNotifications($absence, $currentUserStudent, $isQRSubmission);
             }
 
             $successMessage = $alreadyExists 
                 ? 'Your absence record has been updated successfully!' 
-                : 'Your absence has been recorded successfully! Pending approval.';
+                : 'Your absence has been recorded successfully!';
 
             return redirect()->route('absence.index')->with('success', $successMessage);
         } catch (\Exception $e) {
@@ -217,107 +253,7 @@ class AbsenceController extends Controller
         }
     }
 
-    /**
-     * Show pending absences for approval.
-     */
-    public function pending()
-    {
-        // Only admins can view pending absences for approval
-        if (!auth()->user()->hasRole(Role::ADMIN)) {
-            return redirect()->route('dashboard')->with('error', 'Only admins can view pending absences.');
-        }
-        
-        // Get pending absences with student and user data
-        $absences = Absence::with('student.user')
-            ->where('status', 'pending')
-            ->orderBy('absence_date', 'desc')
-            ->get();
 
-        return view('absence.pending', compact('absences'));
-    }
-
-    /**
-     * Show the individual absence details for approval/rejection.
-     */
-    public function show($studentId)
-    {
-        $student = Student::with('user')->findOrFail($studentId);
-        $absences = Absence::where('student_id', $studentId)->orderBy('absence_date', 'desc')->get();
-
-        return view('absence.show', compact('student', 'absences'));
-    }
-
-    /**
-     * Bulk approve or reject absences
-     */
-    public function bulkAction(Request $request)
-    {
-        // Only admins can approve/reject absences
-        if (!auth()->user()->hasRole(Role::ADMIN)) {
-            return redirect()->back()->with('error', 'Only admins can approve or reject absences.');
-        }
-        
-        $validated = $request->validate([
-            'absence_ids' => 'required|array',
-            'absence_ids.*' => 'exists:absences,id',
-            'action' => 'required|in:approve,reject',
-            'signature' => 'nullable|string',
-            'notes' => 'nullable|string',
-        ]);
-
-        $signatureFilename = null;
-
-        // Store signature if provided
-        if ($request->has('signature') && !empty($request->input('signature'))) {
-            // Convert canvas signature to image
-            $signatureData = $request->input('signature');
-            
-            // Remove data:image/png;base64, prefix
-            if (strpos($signatureData, 'data:image') !== false) {
-                $signatureData = preg_replace('#^data:image/\w+;base64,#i', '', $signatureData);
-            }
-
-            if (!empty($signatureData)) {
-                $signatureData = base64_decode($signatureData);
-                $signatureFilename = 'signature_' . time() . '.png';
-                Storage::disk('public')->put('signatures/' . $signatureFilename, $signatureData);
-            }
-        }
-
-        // Update all selected absences
-        $action = $validated['action'];
-        $status = $action === 'approve' ? 'approved' : 'rejected';
-
-        foreach ($validated['absence_ids'] as $absenceId) {
-            $absence = Absence::findOrFail($absenceId);
-            $absence->update([
-                'status' => $status,
-                'approved_signature' => $signatureFilename ? 'signatures/' . $signatureFilename : null,
-                'approved_notes' => $validated['notes'] ?? null,
-                'approved_at' => now(),
-                'approved_by' => auth()->id(),
-            ]);
-
-            // Log the activity
-            ActivityLog::log(
-                $status === 'approved' ? 'approved_absence' : 'rejected_absence',
-                'absence',
-                $absenceId,
-                "Absence for student {$absence->student->user->name} on {$absence->absence_date->format('Y-m-d H:i')} was {$status}"
-            );
-
-            // Send notification to student with admin's notes
-            $studentUser = $absence->student->user;
-            $studentUser->notify(new AbsenceApprovedNotification(
-                $absence,
-                $status,
-                $validated['notes'] ?? null
-            ));
-        }
-
-        $message = ucfirst($action) . 'd ' . count($validated['absence_ids']) . ' absence(s) successfully.';
-        return redirect()->route('absence.pending')->with('success', $message);
-    }
 
     /**
      * Show all absences for all students.
@@ -378,48 +314,42 @@ class AbsenceController extends Controller
     }
 
     /**
-     * Approve an absence record.
+     * Send notifications to admins and teachers when a student marks absence
      */
-    public function approve(Absence $absence)
+    private function sendAbsenceNotifications(Absence $absence, Student $student, bool $isQRSubmission)
     {
-        // Only admins can approve absences
-        if (!auth()->user()->hasRole(Role::ADMIN)) {
-            return redirect()->back()->with('error', 'Only admins can approve absences.');
+        try {
+            $submissionMethod = $isQRSubmission ? 'qr' : 'selfie';
+            
+            // Get all admins and teachers
+            $notifiableRoles = [
+                Role::ADMIN,
+                Role::HOMEROOM_TEACHER,
+                Role::HEAD_OF_DEPARTMENT,
+                Role::INDUSTRY_SUPERVISOR
+            ];
+            
+            // Get users with these roles
+            $notifiableUsers = User::whereIn('role_id', function ($query) use ($notifiableRoles) {
+                $query->select('id')
+                    ->from('roles')
+                    ->whereIn('name', $notifiableRoles);
+            })->get();
+            
+            // Send notification to each user
+            foreach ($notifiableUsers as $user) {
+                $user->notify(new AbsenceSubmittedNotification($absence, $student->user, $submissionMethod));
+            }
+            
+            \Log::info('Absence notifications sent', [
+                'absence_id' => $absence->id,
+                'student_id' => $student->id,
+                'recipients_count' => $notifiableUsers->count(),
+                'method' => $submissionMethod
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send absence notifications: ' . $e->getMessage());
         }
-        
-        $absence->update(['status' => 'approved']);
-        
-        // Log the activity
-        ActivityLog::log(
-            'approved_absence',
-            'absence',
-            $absence->id,
-            "Absence for student {$absence->student->user->name} on {$absence->absence_date->format('Y-m-d H:i')} was approved"
-        );
-
-        return redirect()->back()->with('success', 'Absence approved successfully.');
     }
 
-    /**
-     * Reject an absence record.
-     */
-    public function reject(Absence $absence)
-    {
-        // Only admins can reject absences
-        if (!auth()->user()->hasRole(Role::ADMIN)) {
-            return redirect()->back()->with('error', 'Only admins can reject absences.');
-        }
-        
-        $absence->update(['status' => 'rejected']);
-        
-        // Log the activity
-        ActivityLog::log(
-            'rejected_absence',
-            'absence',
-            $absence->id,
-            "Absence for student {$absence->student->user->name} on {$absence->absence_date->format('Y-m-d H:i')} was rejected"
-        );
-
-        return redirect()->back()->with('success', 'Absence rejected.');
-    }
 }

@@ -51,11 +51,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/absence', [AbsenceController::class, 'index'])->name('absence.index');
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
     Route::get('/absence/all', [AbsenceController::class, 'all'])->name('absence.all');
-    Route::get('/absence/pending', [AbsenceController::class, 'pending'])->name('absence.pending');
-    Route::post('/absence/bulk-action', [AbsenceController::class, 'bulkAction'])->name('absence.bulkAction');
-    Route::get('/absence/{student}', [AbsenceController::class, 'show'])->name('absence.show');
-    Route::patch('/absence/{absence}/approve', [AbsenceController::class, 'approve'])->name('absence.approve');
-    Route::patch('/absence/{absence}/reject', [AbsenceController::class, 'reject'])->name('absence.reject');
     
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

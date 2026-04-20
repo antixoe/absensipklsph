@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="page-header">
-        <h1><i class="bi bi-list-check" style="margin-right: 8px;"></i>All Student Absences</h1>
+        <h1><i class="bi bi-clipboard-check" style="margin-right: 8px;"></i>All Student Absences</h1>
         <p>View complete absence records for all students</p>
     </div>
 
@@ -93,7 +93,6 @@
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Date & Time</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Location</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600;">Status</th>
-                            <th style="padding: 12px; text-align: left; font-weight: 600;">Notes</th>
                             <th style="padding: 12px; text-align: center; font-weight: 600;">Selfie</th>
                         </tr>
                     </thead>
@@ -128,9 +127,6 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td style="padding: 12px;">
-                                    <small style="color: #666;">{{ $absence->notes ?? '—' }}</small>
-                                </td>
                                 <td style="padding: 12px; text-align: center;">
                                     @if($absence->selfie_path)
                                         <button type="button" onclick="viewPhoto('{{ asset('storage/' . $absence->selfie_path) }}')"
@@ -148,9 +144,11 @@
             </div>
 
             <!-- Pagination -->
-            <div style="margin-top: 20px; display: flex; justify-content: center;">
-                {{ $absences->links() }}
-            </div>
+            @if($absences->hasPages())
+                <div style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-top: 1px solid #ddd; border-radius: 0 0 8px 8px;">
+                    {{ $absences->links() }}
+                </div>
+            @endif
         </div>
     @else
         <div class="card">

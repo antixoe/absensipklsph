@@ -89,7 +89,7 @@
 
             <!-- Pagination -->
             @if($qrCodes->hasPages())
-                <div style="margin-top: 20px; display: flex; justify-content: center;">
+                <div style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-top: 1px solid #ddd; border-radius: 0 0 8px 8px;">
                     {{ $qrCodes->links() }}
                 </div>
             @endif

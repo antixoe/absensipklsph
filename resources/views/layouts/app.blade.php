@@ -585,12 +585,9 @@
                 @endif
             </a>
             @if(!auth()->user()->hasRole('admin'))
-                <a href="/absence" class="{{ request()->is('absence*') && !request()->is('absence/pending*') ? 'active' : '' }}">Absence</a>
+                <a href="/absence" class="{{ request()->is('absence*') && !request()->is('absence/all*') ? 'active' : '' }}">Absence</a>
             @endif
             @if(auth()->user()->hasAnyRole(['homeroom_teacher', 'head_of_department', 'industry_supervisor', 'school_principal', 'admin']))
-                <a href="{{ route('absence.pending') }}" class="{{ request()->is('absence/pending*') ? 'active' : '' }}" style="position: relative;">
-                    <i class="bi bi-check-square" style="margin-right: 4px;"></i>Approve
-                </a>
                 <a href="{{ route('absence.all') }}" class="{{ request()->is('absence/all*') ? 'active' : '' }}">
                     <i class="bi bi-list-check" style="margin-right: 4px;"></i>All Absences
                 </a>

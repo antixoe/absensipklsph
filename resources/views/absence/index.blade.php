@@ -59,6 +59,23 @@
                 <button type="button" id="stopQRBtn" style="width: 100%; margin-top: 10px; padding: 12px 15px; background: #6b7280; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; display: none;">
                     <i class="bi bi-stop-circle" style="margin-right: 8px;"></i>Stop Scanner
                 </button>
+                
+                <!-- Manual QR Code Entry -->
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #ddd;">
+                    <p style="text-align: center; font-size: 14px; color: #666; margin-bottom: 10px;">
+                        <strong>Can't scan?</strong> Enter QR code manually:
+                    </p>
+                    <form id="manual-qr-form" style="display: flex; gap: 10px;">
+                        <input type="text" id="manual-qr-code" placeholder="Enter QR code or paste here" 
+                               style="flex: 1; padding: 12px 15px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px;">
+                        <button type="submit" style="padding: 12px 20px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                            <i class="bi bi-arrow-right" style="margin-right: 8px;"></i>Submit
+                        </button>
+                    </form>
+                    <small style="color: #999; display: block; margin-top: 8px; text-align: center;">
+                        Your instructor will provide the QR code value
+                    </small>
+                </div>
             </div>
             <small style="color: #666; display: block; margin-top: 10px; text-align: center;">
                 <i class="bi bi-info-circle"></i> Point your camera at the QR code to scan it automatically
@@ -72,7 +89,7 @@
             </h3>
             <div style="padding: 15px; background: #fff; border-radius: 6px;">
                 <div style="text-align: center;">
-                    <video id="selfie-video" style="width: 100%; max-width: 400px; margin: 0 auto; border-radius: 6px; display: none; background: #000;"></video>
+                    <video id="selfie-video" autoplay playsinline muted style="width: 100%; max-width: 400px; margin: 0 auto; border-radius: 6px; display: none; background: #000;"></video>
                     <img id="selfie-preview" style="width: 100%; max-width: 400px; margin: 0 auto; border-radius: 6px; display: none;">
                     
                     <div id="selfie-placeholder" style="width: 100%; max-width: 400px; margin: 0 auto; aspect-ratio: 3/4; background: #e5e7eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #999;">
@@ -120,9 +137,45 @@
 
         <!-- Submit Button -->
         <div style="display: flex; gap: 10px;">
-            <button type="button" id="submit-attendance-btn" class="btn" style="flex: 1; padding: 12px 20px; display: none;">
+            <button type="button" id="submit-attendance-btn" class="btn" style="flex: 1; padding: 12px 20px; display: none; cursor: pointer; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
                 <i class="bi bi-check-circle" style="margin-right: 8px;"></i>Complete Attendance
             </button>
+        </div>
+
+        <!-- Loading Modal -->
+        <div id="loading-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 9999; align-items: center; justify-content: center;">
+            <div style="background: white; border-radius: 12px; padding: 40px; text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); max-width: 400px; width: 90%;">
+                <!-- Spinner Animation -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: inline-block; position: relative; width: 50px; height: 50px;">
+                        <i class="bi bi-arrow-repeat" style="font-size: 48px; color: #10b981; animation: spin 1s linear infinite;"></i>
+                    </div>
+                </div>
+                
+                <!-- Status Text -->
+                <h3 style="margin: 0 0 10px 0; color: #333; font-size: 18px; font-weight: 600;">
+                    Processing Attendance
+                </h3>
+                <p style="margin: 0 0 20px 0; color: #666; font-size: 14px;">
+                    <span id="loading-message">Submitting your attendance data...</span>
+                </p>
+                
+                <!-- Progress Steps -->
+                <div style="background: #f5f5f5; border-radius: 8px; padding: 15px; text-align: left; font-size: 12px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <i class="bi bi-check-circle-fill" style="color: #10b981; margin-right: 8px; font-size: 16px;"></i>
+                        <span style="color: #333;">QR Code Scanned</span>
+                    </div>
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <i class="bi bi-check-circle-fill" style="color: #10b981; margin-right: 8px; font-size: 16px;"></i>
+                        <span style="color: #333;">Selfie Captured</span>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <i class="bi bi-hourglass-split" style="color: #f97316; margin-right: 8px; font-size: 16px; animation: spin 1s linear infinite;"></i>
+                        <span style="color: #f97316; font-weight: 600;">Uploading Data...</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Tips -->
@@ -150,6 +203,11 @@
             0% { top: 0; opacity: 0; }
             50% { opacity: 1; }
             100% { top: calc(100% - 2px); opacity: 0; }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
     <script>
@@ -244,24 +302,32 @@
                     });
                     
                     qrVideoEl.srcObject = qrStream;
+                    console.log('✓ Stream set to video element');
                     
-                    // Ensure video starts playing
-                    qrVideoEl.onloadedmetadata = () => {
-                        qrVideoEl.play().then(() => {
-                            console.log('Video playing');
-                            startScanning();
-                        }).catch(err => {
-                            console.error('Play error:', err);
-                            showStatus('Video playback error', 'error');
-                        });
-                    };
-                    
-                    // Timeout for video loading
-                    setTimeout(() => {
-                        if (!qrScannerActive) {
-                            showStatus('Camera not responding, please try again', 'warning');
-                        }
-                    }, 3000);
+                    // Ensure video starts playing with proper error handling
+                    await new Promise((resolve, reject) => {
+                        qrVideoEl.onloadedmetadata = () => {
+                            console.log('✓ Video metadata loaded');
+                            qrVideoEl.play().then(() => {
+                                console.log('✓ Video playing - starting QR scan');
+                                resolve();
+                            }).catch(err => {
+                                console.error('❌ Play error:', err);
+                                reject(err);
+                            });
+                        };
+                        
+                        // Timeout if metadata doesn't load
+                        setTimeout(() => {
+                            if (qrVideoEl.readyState < 2) {
+                                reject(new Error('Video metadata timeout'));
+                            }
+                        }, 5000);
+                    }).then(() => {
+                        startScanning();
+                    }).catch(err => {
+                        showStatus('Video error: ' + err.message, 'error');
+                    });
                     
                     startQRBtn.style.display = 'none';
                     stopQRBtn.style.display = 'block';
@@ -278,12 +344,42 @@
             });
         }
 
+        // ==================== MANUAL QR CODE ENTRY ====================
+        const manualQRForm = document.getElementById('manual-qr-form');
+        const manualQRInput = document.getElementById('manual-qr-code');
+
+        if (manualQRForm) {
+            manualQRForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const qrCode = manualQRInput.value.trim();
+                
+                if (!qrCode) {
+                    showStatus('Please enter a QR code', 'error');
+                    return;
+                }
+                
+                // Stop camera if it's running
+                if (qrScannerActive) {
+                    qrScannerActive = false;
+                    clearInterval(qrScanInterval);
+                    if (qrStream) {
+                        qrStream.getTracks().forEach(track => track.stop());
+                    }
+                }
+                
+                console.log('Manual QR code submitted:', qrCode);
+                validateAndSetQRCode(qrCode);
+            });
+        }
+
         function startScanning() {
             qrScannerActive = true;
             showStatus('🎯 Scanning... Point at QR code', 'info');
-            console.log('QR Scanning started');
+            console.log('✓ QR Scanning started');
+            console.log('Video element:', { width: qrVideoEl.videoWidth, height: qrVideoEl.videoHeight });
             
             // Scan every 200ms for better detection
+            let scanCount = 0;
             qrScanInterval = setInterval(() => {
                 if (!qrScannerActive) {
                     clearInterval(qrScanInterval);
@@ -294,32 +390,79 @@
                     const canvas = qrCanvasEl;
                     const video = qrVideoEl;
                     
-                    if (video.videoWidth > 0 && video.videoHeight > 0) {
+                    // Check if video has dimensions
+                    if (video.videoWidth === 0 || video.videoHeight === 0) {
+                        return; // Skip this frame
+                    }
+                    
+                    // Update canvas size to match video
+                    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
-                        
-                        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                        ctx.drawImage(video, 0, 0);
-                        
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        
-                        if (typeof jsQR !== 'undefined' && imageData.data.length > 0) {
-                            const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    }
+                    
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    
+                    // Draw video frame to canvas
+                    try {
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    } catch (e) {
+                        console.error('Error drawing to canvas:', e);
+                        return;
+                    }
+                    
+                    // Get image data
+                    let imageData;
+                    try {
+                        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    } catch (e) {
+                        console.error('Error getting image data:', e);
+                        return;
+                    }
+                    
+                    // Check if jsQR is available
+                    if (typeof jsQR === 'undefined') {
+                        console.warn('⚠ jsQR library not ready yet');
+                        return;
+                    }
+                    
+                    // Attempt QR detection
+                    if (imageData.data.length > 0) {
+                        try {
+                            // Try with inverted colors first, then normal
+                            let code = jsQR(imageData.data, imageData.width, imageData.height);
+                            
+                            // If not found, try with inverted colors
+                            if (!code || !code.data) {
+                                // Try inverting the image
+                                for (let i = 0; i < imageData.data.length; i += 4) {
+                                    imageData.data[i] = 255 - imageData.data[i];     // R
+                                    imageData.data[i + 1] = 255 - imageData.data[i + 1]; // G
+                                    imageData.data[i + 2] = 255 - imageData.data[i + 2]; // B
+                                }
+                                code = jsQR(imageData.data, imageData.width, imageData.height);
+                            }
                             
                             if (code && code.data) {
-                                console.log('✓ QR Code detected:', code.data);
+                                console.log('✅ QR Code detected:', code.data);
                                 qrScannerActive = false;
                                 clearInterval(qrScanInterval);
                                 validateAndSetQRCode(code.data);
                                 return;
                             }
+                        } catch (e) {
+                            console.error('jsQR error:', e);
                         }
                     }
+                    
+                    scanCount++;
+                    if (scanCount % 25 === 0) { // Log every 5 seconds (25 * 200ms)
+                        console.log(`Scanning... (${scanCount} frames scanned)`);
+                    }
                 } catch (error) {
-                    console.error('Scan error:', error);
+                    console.error('❌ Scan loop error:', error);
                 }
             }, 200);
-            });
         }
 
         stopQRBtn.addEventListener('click', function() {
@@ -372,7 +515,6 @@
                 showStatus('📸 Now take a clear selfie to continue...', 'success');
                 startSelfieBtnEl.focus();
             }, 500);
-            }, 1000);
         }
 
         // ==================== SELFIE CAPTURE ====================
@@ -380,20 +522,33 @@
 
         startSelfieBtnEl.addEventListener('click', async function() {
             try {
+                showStatus('Requesting camera access for selfie...', 'info');
+                
                 selfieStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
                 });
                 
+                console.log('✓ Selfie stream obtained');
                 selfieVideoEl.srcObject = selfieStream;
+                console.log('✓ Stream set to video element');
+                
+                // Ensure video starts playing
+                await selfieVideoEl.play();
+                console.log('✓ Selfie video playing');
+                
                 selfieVideoEl.style.display = 'block';
                 selfiePlaceholderEl.style.display = 'none';
                 
                 startSelfieBtnEl.style.display = 'none';
                 takeSelfieBtnEl.style.display = 'block';
+                takeSelfieBtnEl.focus();
                 
-                showStatus('Camera ready. Tap "Take Photo" when ready.', 'info');
+                showStatus('✓ Camera ready. Tap "Take Photo" when ready.', 'success');
             } catch (error) {
+                console.error('Selfie camera error:', error);
                 showStatus('Camera access denied. Please enable camera permissions.', 'error');
+                startSelfieBtnEl.style.display = 'block';
+                takeSelfieBtnEl.style.display = 'none';
             }
         });
 
@@ -448,18 +603,29 @@
 
         retakeSelfieBtnEl.addEventListener('click', async function() {
             try {
+                showStatus('Restarting camera...', 'info');
+                
                 selfieStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
                 });
                 
                 selfieVideoEl.srcObject = selfieStream;
+                console.log('✓ Retake stream set');
+                
+                // Ensure video starts playing
+                await selfieVideoEl.play();
+                console.log('✓ Retake video playing');
+                
                 selfieVideoEl.style.display = 'block';
                 selfiePreviewEl.style.display = 'none';
                 selfiePlaceholderEl.style.display = 'none';
                 
                 takeSelfieBtnEl.style.display = 'block';
                 retakeSelfieBtnEl.style.display = 'none';
+                
+                showStatus('Camera restarted. Ready to take another photo.', 'success');
             } catch (error) {
+                console.error('Retake camera error:', error);
                 showStatus('Camera access error.', 'error');
             }
         });
@@ -527,57 +693,109 @@
         }
 
         function enableSubmitButton() {
+            console.log('✓ Submit button enabled');
+            console.log('Current state:', {
+                qrCode: state.qrCode ? 'Present' : 'Missing',
+                selfie: state.selfieBlob ? 'Present (' + state.selfieBlob.size + ' bytes)' : 'Missing',
+                latitude: state.latitude,
+                longitude: state.longitude,
+                ip: state.ipAddress
+            });
             submitBtnEl.style.display = 'block';
+            submitBtnEl.disabled = false;
+            submitBtnEl.focus();
         }
 
         // ==================== SUBMIT ====================
-        submitBtnEl.addEventListener('click', function() {
-            @if($currentUserStudent && $todayAbsence)
-                showStatus('You have already submitted your attendance today.', 'warning');
-                return;
-            @endif
-            
-            if (!state.qrCode) {
-                showStatus('Error: QR code missing.', 'error');
-                return;
-            }
-            
-            if (!state.selfieBlob) {
-                showStatus('Error: Selfie missing.', 'error');
-                return;
-            }
-            
-            submitAttendance();
-        });
+        if (submitBtnEl) {
+            submitBtnEl.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Submit button clicked');
+                
+                @if($currentUserStudent && $todayAbsence)
+                    showStatus('You have already submitted your attendance today.', 'warning');
+                    return;
+                @endif
+                
+                console.log('Validating state...');
+                console.log('QR Code:', state.qrCode);
+                console.log('Selfie Blob:', state.selfieBlob?.size, 'bytes');
+                
+                if (!state.qrCode) {
+                    showStatus('Error: QR code missing. Please scan QR code first.', 'error');
+                    console.error('Missing QR code');
+                    return;
+                }
+                
+                if (!state.selfieBlob) {
+                    showStatus('Error: Selfie missing. Please take a selfie first.', 'error');
+                    console.error('Missing selfie');
+                    return;
+                }
+                
+                console.log('All validation passed, submitting...');
+                submitAttendance();
+            });
+        } else {
+            console.error('Submit button element not found!');
+        }
 
         function submitAttendance() {
             showStatus('Processing your attendance...', 'info');
             submitBtnEl.disabled = true;
             
+            // Show loading modal
+            const loadingModal = document.getElementById('loading-modal');
+            const loadingMessage = document.getElementById('loading-message');
+            loadingModal.style.display = 'flex';
+            loadingMessage.textContent = 'Uploading your data...';
+            
             const formData = new FormData();
-            formData.append('code', state.qrCode);
+            formData.append('qr_code', state.qrCode);
             formData.append('selfie', state.selfieBlob, 'selfie.jpg');
-            formData.append('latitude', state.latitude || '');
-            formData.append('longitude', state.longitude || '');
+            formData.append('latitude', state.latitude || '0');
+            formData.append('longitude', state.longitude || '0');
             formData.append('ip_address', state.ipAddress || '');
+            formData.append('location_name', 'Mobile Device');
+            // Append student_ids properly
+            const studentId = {{ $currentUserStudent->id ?? 0 }};
+            formData.append('student_ids[0]', studentId);
+            formData.append('method', 'selfie');
             formData.append('_token', '{{ csrf_token() }}');
             
-            fetch('{{ route("qrcode.scan") }}', {
+            console.log('=== SUBMISSION DEBUG ===');
+            console.log('QR Code:', state.qrCode);
+            console.log('Selfie:', state.selfieBlob?.size, 'bytes');
+            console.log('Latitude:', state.latitude);
+            console.log('Longitude:', state.longitude);
+            console.log('IP Address:', state.ipAddress);
+            console.log('Student ID:', studentId);
+            console.log('Submitting to {{ route("absence.store") }}');
+            
+            fetch('{{ route("absence.store") }}', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatus('Attendance submitted successfully!', 'success');
-                    setTimeout(() => location.reload(), 2500);
-                } else {
-                    showStatus('Error: ' + data.message, 'error');
-                    submitBtnEl.disabled = false;
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                return response.text();
+            })
+            .then(data => {
+                console.log('Success response:', data);
+                loadingMessage.innerHTML = '<i class="bi bi-check-circle-fill" style="color: #10b981; margin-right: 8px;"></i>Attendance Recorded Successfully!';
+                showStatus('Attendance submitted successfully!', 'success');
+                setTimeout(() => {
+                    loadingModal.style.display = 'none';
+                    window.location.href = '{{ route("absence.index") }}';
+                }, 2000);
             })
             .catch(error => {
-                showStatus('Error: ' + error.message, 'error');
+                console.error('Submit error:', error);
+                loadingModal.style.display = 'none';
+                showStatus('Error submitting attendance: ' + error.message, 'error');
                 submitBtnEl.disabled = false;
             });
         }

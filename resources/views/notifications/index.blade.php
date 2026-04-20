@@ -63,35 +63,89 @@
                     <!-- Notification Details -->
                     <div style="background: #f9fafb; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div>
-                                <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">DATE</p>
-                                <p style="margin: 0; font-size: 14px; color: #222;">{{ $notification->data['date'] }}</p>
-                            </div>
-                            <div>
-                                <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">STATUS</p>
-                                <p style="margin: 0; font-size: 14px;">
-                                    @if($notification->data['action'] === 'approved')
-                                        <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: #dcfce7; color: #166534; font-weight: 600; font-size: 12px;">
-                                            <i class="bi bi-check-circle-fill" style="margin-right: 4px;"></i>Approved
-                                        </span>
-                                    @else
-                                        <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: #fee2e2; color: #991b1b; font-weight: 600; font-size: 12px;">
-                                            <i class="bi bi-x-circle-fill" style="margin-right: 4px;"></i>Rejected
-                                        </span>
-                                    @endif
-                                </p>
-                            </div>
+                            <!-- Date - for both types of notifications -->
+                            @if(isset($notification->data['date']) || isset($notification->data['submission_date']))
+                                <div>
+                                    <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">DATE</p>
+                                    <p style="margin: 0; font-size: 14px; color: #222;">
+                                        {{ $notification->data['date'] ?? $notification->data['submission_date'] ?? 'N/A' }}
+                                    </p>
+                                </div>
+                            @endif
+
+                            <!-- Status/Method -->
+                            @if(isset($notification->data['action']))
+                                <!-- Old Approval Notification -->
+                                <div>
+                                    <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">STATUS</p>
+                                    <p style="margin: 0; font-size: 14px;">
+                                        @if($notification->data['action'] === 'approved')
+                                            <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: #dcfce7; color: #166534; font-weight: 600; font-size: 12px;">
+                                                <i class="bi bi-check-circle-fill" style="margin-right: 4px;"></i>Approved
+                                            </span>
+                                        @else
+                                            <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: #fee2e2; color: #991b1b; font-weight: 600; font-size: 12px;">
+                                                <i class="bi bi-x-circle-fill" style="margin-right: 4px;"></i>Rejected
+                                            </span>
+                                        @endif
+                                    </p>
+                                </div>
+                            @elseif(isset($notification->data['submission_method']))
+                                <!-- New Submission Notification -->
+                                <div>
+                                    <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">METHOD</p>
+                                    <p style="margin: 0; font-size: 14px;">
+                                        @if($notification->data['submission_method'] === 'qr')
+                                            <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: #dbeafe; color: #0c4a6e; font-weight: 600; font-size: 12px;">
+                                                <i class="bi bi-qr-code" style="margin-right: 4px;"></i>QR Code
+                                            </span>
+                                        @else
+                                            <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: #fce7f3; color: #831843; font-weight: 600; font-size: 12px;">
+                                                <i class="bi bi-camera-fill" style="margin-right: 4px;"></i>Selfie
+                                            </span>
+                                        @endif
+                                    </p>
+                                </div>
+                            @endif
                         </div>
+
+                        <!-- Student Info for Submission Notifications -->
+                        @if(isset($notification->data['student_name']))
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div>
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">STUDENT</p>
+                                        <p style="margin: 0; font-size: 14px; color: #222;">{{ $notification->data['student_name'] }}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">LOCATION</p>
+                                        <p style="margin: 0; font-size: 14px; color: #222;">{{ $notification->data['location'] ?? 'N/A' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
-                    <!-- Admin Notes -->
-                    @if($notification->data['admin_notes'])
+                    <!-- Admin Notes (only for approval notifications) -->
+                    @if(isset($notification->data['admin_notes']) && $notification->data['admin_notes'])
                         <div style="background: #e0f2fe; padding: 12px; border-radius: 6px; border-left: 3px solid #0284c7; margin-bottom: 12px;">
                             <p style="margin: 0 0 5px 0; font-size: 12px; color: #0c4a6e; font-weight: 600;">
                                 <i class="bi bi-chat-left-text" style="margin-right: 4px;"></i>ADMIN NOTES
                             </p>
                             <p style="margin: 0; font-size: 14px; color: #0c4a6e;">
                                 {{ $notification->data['admin_notes'] }}
+                            </p>
+                        </div>
+                    @endif
+
+                    <!-- IP Address (for submission notifications) -->
+                    @if(isset($notification->data['ip_address']))
+                        <div style="background: #f3f4f6; padding: 12px; border-radius: 6px; border-left: 3px solid #6b7280; margin-bottom: 12px;">
+                            <p style="margin: 0 0 5px 0; font-size: 12px; color: #374151; font-weight: 600;">
+                                <i class="bi bi-globe" style="margin-right: 4px;"></i>IP ADDRESS
+                            </p>
+                            <p style="margin: 0; font-size: 14px; color: #374151; font-family: monospace;">
+                                {{ $notification->data['ip_address'] }}
                             </p>
                         </div>
                     @endif
