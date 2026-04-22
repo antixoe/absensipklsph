@@ -26,23 +26,19 @@ class Absence extends Model
         'approved_by',
         'qr_code_id',
         'scanned_qr_at',
+        'scanned_qr_out_at',
         'qr_code',
-    ];
-
-    protected $dates = [
-        'absence_date',
-        'approved_at',
-        'scanned_qr_at',
-        'created_at',
-        'updated_at',
     ];
 
     protected $casts = [
         'latitude' => 'float',
         'longitude' => 'float',
-        'absence_date' => 'datetime',
-        'approved_at' => 'datetime',
+        'absence_date' => 'date',
         'scanned_qr_at' => 'datetime',
+        'scanned_qr_out_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**

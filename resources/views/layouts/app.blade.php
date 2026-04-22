@@ -586,6 +586,9 @@
             </a>
             @if(!auth()->user()->hasRole('admin'))
                 <a href="/absence" class="{{ request()->is('absence*') && !request()->is('absence/all*') ? 'active' : '' }}">Absence</a>
+                <a href="{{ route('daily-agenda.index') }}" class="{{ request()->is('daily-agenda*') ? 'active' : '' }}">
+                    <i class="bi bi-calendar-event" style="margin-right: 4px;"></i>Daily Agenda
+                </a>
             @endif
             @if(auth()->user()->hasAnyRole(['homeroom_teacher', 'head_of_department', 'industry_supervisor', 'school_principal', 'admin']))
                 <a href="{{ route('absence.all') }}" class="{{ request()->is('absence/all*') ? 'active' : '' }}">

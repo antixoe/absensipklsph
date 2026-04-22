@@ -32,6 +32,11 @@
             <div style="font-size: 36px; font-weight: 700; color: #a855f7; margin-bottom: 5px;"><i class="bi bi-gear-fill"></i></div>
             <p style="color: #333; font-size: 18px; font-weight: 600;">Manage Tasks</p>
         </div>
+        <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 5px solid #ec4899; text-align: center; transition: transform 0.3s;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 10px; font-weight: 600; text-transform: uppercase;">Daily Agenda</div>
+            <div style="font-size: 36px; font-weight: 700; color: #ec4899; margin-bottom: 5px;"><i class="bi bi-calendar-event"></i></div>
+            <p style="color: #333; font-size: 18px; font-weight: 600;">Plan Your Day</p>
+        </div>
     </div>
 
     <!-- System Statistics -->
@@ -98,6 +103,13 @@
 
         <!-- Feature 6 -->
         <div class="card">
+            <div style="font-size: 28px; margin-bottom: 15px;"><i class="bi bi-calendar-event" style="color: #f97316;"></i></div>
+            <h3 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 12px;">Daily Agenda</h3>
+            <p style="color: #666; line-height: 1.6; font-size: 14px;">Plan your daily work, track achievements, and get feedback from mentors. Complete agenda forms with work plans and realizations.</p>
+        </div>
+
+        <!-- Feature 7 -->
+        <div class="card">
             <div style="font-size: 28px; margin-bottom: 15px;"><i class="bi bi-shield-check" style="color: #f97316;"></i></div>
             <h3 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 12px;">Secure & Reliable</h3>
             <p style="color: #666; line-height: 1.6; font-size: 14px;">Your data is protected with modern security standards. Encrypted storage and secure authentication system.</p>
@@ -122,6 +134,11 @@
             </div>
             <div>
                 <div style="background: #f97316; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-bottom: 12px;">3</div>
+                <h3 style="font-weight: 600; color: #333; margin-bottom: 8px;">Create Your Daily Agenda</h3>
+                <p style="color: #666; font-size: 14px;">Plan your work daily, record achievements, and document any challenges. Submit for review by your company mentor and school supervisor.</p>
+            </div>
+            <div>
+                <div style="background: #f97316; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-bottom: 12px;">4</div>
                 <h3 style="font-weight: 600; color: #333; margin-bottom: 8px;">Upload Documents</h3>
                 <p style="color: #666; font-size: 14px;">Keep all your important documents organized. Upload certificates, project files, and other relevant materials for easy access.</p>
             </div>

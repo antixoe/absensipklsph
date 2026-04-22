@@ -9,6 +9,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AbsenceController;
+use App\Http\Controllers\DailyAgendaController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ChatbotController;
@@ -51,6 +52,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/absence', [AbsenceController::class, 'index'])->name('absence.index');
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
     Route::get('/absence/all', [AbsenceController::class, 'all'])->name('absence.all');
+    
+    // Daily Agenda CRUD
+    Route::get('/daily-agenda', [DailyAgendaController::class, 'index'])->name('daily-agenda.index');
+    Route::get('/daily-agenda/create', [DailyAgendaController::class, 'create'])->name('daily-agenda.create');
+    Route::post('/daily-agenda', [DailyAgendaController::class, 'store'])->name('daily-agenda.store');
+    Route::get('/daily-agenda/{dailyAgenda}', [DailyAgendaController::class, 'show'])->name('daily-agenda.show');
+    Route::get('/daily-agenda/{dailyAgenda}/edit', [DailyAgendaController::class, 'edit'])->name('daily-agenda.edit');
+    Route::put('/daily-agenda/{dailyAgenda}', [DailyAgendaController::class, 'update'])->name('daily-agenda.update');
+    Route::delete('/daily-agenda/{dailyAgenda}', [DailyAgendaController::class, 'destroy'])->name('daily-agenda.destroy');
     
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
