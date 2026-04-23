@@ -13,9 +13,9 @@
                 <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Informasi Agenda</h2>
                 <div style="display: flex; gap: 10px;">
                     <a href="{{ route('daily-agenda.edit', $dailyAgenda->id) }}" 
-                       style="padding: 10px 15px; background: #f59e0b; color: white; border: none; border-radius: 6px; text-decoration: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;"
-                       onmouseover="this.style.background='#d97706'"
-                       onmouseout="this.style.background='#f59e0b'">
+                       style="padding: 10px 15px; background: #f97316; color: white; border: none; border-radius: 6px; text-decoration: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;"
+                       onmouseover="this.style.background='#ea580c'"
+                       onmouseout="this.style.background='#f97316'">
                         <i class="bi bi-pencil"></i> Edit
                     </a>
                     <a href="{{ route('daily-agenda.index') }}" 
@@ -30,7 +30,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <p style="margin: 0; font-size: 13px; color: #999; font-weight: 600; text-transform: uppercase;">Nama Siswa</p>
-                    <p style="margin: 8px 0 0 0; font-size: 16px; font-weight: 600;">{{ $dailyAgenda->student->user->name ?? 'N/A' }}</p>
+                    <p style="margin: 8px 0 0 0; font-size: 16px; font-weight: 600;">{{ $dailyAgenda->student?->user?->name ?? 'N/A' }}</p>
                 </div>
                 <div>
                     <p style="margin: 0; font-size: 13px; color: #999; font-weight: 600; text-transform: uppercase;">Tanggal</p>
@@ -38,11 +38,11 @@
                 </div>
                 <div>
                     <p style="margin: 0; font-size: 13px; color: #999; font-weight: 600; text-transform: uppercase;">Jam Datang</p>
-                    <p style="margin: 8px 0 0 0; font-size: 16px; font-weight: 600; background: #dbeafe; display: inline-block; padding: 4px 8px; border-radius: 4px;">{{ $dailyAgenda->time_in ?? '-' }}</p>
+                    <p style="margin: 8px 0 0 0; font-size: 16px; font-weight: 600; background: #fed7aa; display: inline-block; padding: 4px 8px; border-radius: 4px;">{{ $dailyAgenda->time_in ?? '-' }}</p>
                 </div>
                 <div>
                     <p style="margin: 0; font-size: 13px; color: #999; font-weight: 600; text-transform: uppercase;">Jam Pulang</p>
-                    <p style="margin: 8px 0 0 0; font-size: 16px; font-weight: 600; background: #dbeafe; display: inline-block; padding: 4px 8px; border-radius: 4px;">{{ $dailyAgenda->time_out ?? '-' }}</p>
+                    <p style="margin: 8px 0 0 0; font-size: 16px; font-weight: 600; background: #fed7aa; display: inline-block; padding: 4px 8px; border-radius: 4px;">{{ $dailyAgenda->time_out ?? '-' }}</p>
                 </div>
             </div>
         </div>
@@ -158,35 +158,57 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
                 <!-- Tanda Tangan Murid -->
                 <div style="text-align: center;">
-                    <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; min-height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; cursor: pointer;" 
-                         onclick="showSignatureModal('{{ isset($dailyAgenda->student_signature_path) ? asset('storage/' . $dailyAgenda->student_signature_path) : '' }}', 'Murid')">
+                    <div style="position: relative; margin-bottom: 15px;">
+                        <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; min-height: 180px; display: flex; align-items: center; justify-content: center; cursor: pointer;" 
+                             onclick="showSignatureModal('{{ isset($dailyAgenda->student_signature_path) ? asset('storage/' . $dailyAgenda->student_signature_path) : '' }}', 'Murid')">
+                                @if ($dailyAgenda->student_signature_path)
+                                    <img src="{{ asset('storage/' . $dailyAgenda->student_signature_path) }}" 
+                                         alt="Tanda Tangan Murid" 
+                                         style="max-width: 100%; max-height: 120px; object-fit: contain;">
+                                @else
+                                    <div style="text-align: center;">
+                                        <i class="bi bi-image" style="font-size: 48px; color: #d1d5db; display: block; margin-bottom: 8px;"></i>
+                                        <p style="color: #999; margin: 0; font-size: 13px;">Belum ada tanda tangan</p>
+                                    </div>
+                                @endif
+                        </div>
                         @if ($dailyAgenda->student_signature_path)
-                            <img src="{{ asset('storage/' . $dailyAgenda->student_signature_path) }}" 
-                                 alt="Tanda Tangan Murid" 
-                                 style="max-width: 100%; max-height: 120px; object-fit: contain;">
+                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
+                                <i class="bi bi-check-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
+                            </div>
                         @else
-                            <div style="text-align: center;">
-                                <i class="bi bi-image" style="font-size: 48px; color: #d1d5db; display: block; margin-bottom: 8px;"></i>
-                                <p style="color: #999; margin: 0; font-size: 13px;">Belum ada tanda tangan</p>
+                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
+                                <i class="bi bi-x-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
                             </div>
                         @endif
                     </div>
                     <h5 style="margin: 0 0 5px 0; font-weight: 600; font-size: 14px;">Murid</h5>
-                    <p style="margin: 0; color: #999; font-size: 13px;">{{ $dailyAgenda->student->user->name ?? 'N/A' }}</p>
+                    <p style="margin: 0; color: #999; font-size: 13px;">{{ $dailyAgenda->student?->user?->name ?? 'N/A' }}</p>
                 </div>
 
                 <!-- Tanda Tangan Instruktur (Perusahaan) -->
                 <div style="text-align: center;">
-                    <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; min-height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; cursor: pointer;" 
-                         onclick="showSignatureModal('{{ isset($dailyAgenda->company_mentor_signature_path) ? asset('storage/' . $dailyAgenda->company_mentor_signature_path) : '' }}', 'Instruktur')">
+                    <div style="position: relative; margin-bottom: 15px;">
+                        <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; min-height: 180px; display: flex; align-items: center; justify-content: center; cursor: pointer;" 
+                             onclick="showSignatureModal('{{ isset($dailyAgenda->company_mentor_signature_path) ? asset('storage/' . $dailyAgenda->company_mentor_signature_path) : '' }}', 'Instruktur')">
+                                @if ($dailyAgenda->company_mentor_signature_path)
+                                    <img src="{{ asset('storage/' . $dailyAgenda->company_mentor_signature_path) }}" 
+                                         alt="Tanda Tangan Instruktur" 
+                                         style="max-width: 100%; max-height: 120px; object-fit: contain;">
+                                @else
+                                    <div style="text-align: center;">
+                                        <i class="bi bi-image" style="font-size: 48px; color: #d1d5db; display: block; margin-bottom: 8px;"></i>
+                                        <p style="color: #999; margin: 0; font-size: 13px;">Belum ada tanda tangan</p>
+                                    </div>
+                                @endif
+                        </div>
                         @if ($dailyAgenda->company_mentor_signature_path)
-                            <img src="{{ asset('storage/' . $dailyAgenda->company_mentor_signature_path) }}" 
-                                 alt="Tanda Tangan Instruktur" 
-                                 style="max-width: 100%; max-height: 120px; object-fit: contain;">
+                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
+                                <i class="bi bi-check-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
+                            </div>
                         @else
-                            <div style="text-align: center;">
-                                <i class="bi bi-image" style="font-size: 48px; color: #d1d5db; display: block; margin-bottom: 8px;"></i>
-                                <p style="color: #999; margin: 0; font-size: 13px;">Belum ada tanda tangan</p>
+                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
+                                <i class="bi bi-x-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
                             </div>
                         @endif
                     </div>
@@ -196,16 +218,27 @@
 
                 <!-- Tanda Tangan Guru Pembimbing (Sekolah) -->
                 <div style="text-align: center;">
-                    <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; min-height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; cursor: pointer;" 
-                         onclick="showSignatureModal('{{ isset($dailyAgenda->school_teacher_signature_path) ? asset('storage/' . $dailyAgenda->school_teacher_signature_path) : '' }}', 'Guru Pembimbing')">
+                    <div style="position: relative; margin-bottom: 15px;">
+                        <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; min-height: 180px; display: flex; align-items: center; justify-content: center; cursor: pointer;" 
+                             onclick="showSignatureModal('{{ isset($dailyAgenda->school_teacher_signature_path) ? asset('storage/' . $dailyAgenda->school_teacher_signature_path) : '' }}', 'Guru Pembimbing')">
+                                @if ($dailyAgenda->school_teacher_signature_path)
+                                    <img src="{{ asset('storage/' . $dailyAgenda->school_teacher_signature_path) }}" 
+                                         alt="Tanda Tangan Guru Pembimbing" 
+                                         style="max-width: 100%; max-height: 120px; object-fit: contain;">
+                                @else
+                                    <div style="text-align: center;">
+                                        <i class="bi bi-image" style="font-size: 48px; color: #d1d5db; display: block; margin-bottom: 8px;"></i>
+                                        <p style="color: #999; margin: 0; font-size: 13px;">Belum ada tanda tangan</p>
+                                    </div>
+                                @endif
+                        </div>
                         @if ($dailyAgenda->school_teacher_signature_path)
-                            <img src="{{ asset('storage/' . $dailyAgenda->school_teacher_signature_path) }}" 
-                                 alt="Tanda Tangan Guru Pembimbing" 
-                                 style="max-width: 100%; max-height: 120px; object-fit: contain;">
+                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
+                                <i class="bi bi-check-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
+                            </div>
                         @else
-                            <div style="text-align: center;">
-                                <i class="bi bi-image" style="font-size: 48px; color: #d1d5db; display: block; margin-bottom: 8px;"></i>
-                                <p style="color: #999; margin: 0; font-size: 13px;">Belum ada tanda tangan</p>
+                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
+                                <i class="bi bi-x-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
                             </div>
                         @endif
                     </div>
@@ -230,13 +263,11 @@
         </div>
 
         <!-- Print Button -->
-        <div style="text-align: center; margin-bottom: 30px;">
             <button onclick="window.print()" style="padding: 12px 30px; background: #f97316; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s;"
                     onmouseover="this.style.background='#ea580c'"
                     onmouseout="this.style.background='#f97316'">
                 <i class="bi bi-printer"></i> Cetak
             </button>
-        </div>
     </div>
 
     <!-- Signature Modal -->

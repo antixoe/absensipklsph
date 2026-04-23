@@ -21,11 +21,11 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
                     <div>
                         <p style="margin: 0 0 5px 0; font-size: 12px; color: #999; font-weight: 600;">Jam Datang</p>
-                        <p id="preview-time-in" style="margin: 0; font-size: 14px; background: #dbeafe; padding: 6px 10px; border-radius: 4px; display: inline-block;">-</p>
+                        <p id="preview-time-in" style="margin: 0; font-size: 14px; background: #fed7aa; padding: 6px 10px; border-radius: 4px; display: inline-block;">-</p>
                     </div>
                     <div>
                         <p style="margin: 0 0 5px 0; font-size: 12px; color: #999; font-weight: 600;">Jam Pulang</p>
-                        <p id="preview-time-out" style="margin: 0; font-size: 14px; background: #dbeafe; padding: 6px 10px; border-radius: 4px; display: inline-block;">-</p>
+                        <p id="preview-time-out" style="margin: 0; font-size: 14px; background: #fed7aa; padding: 6px 10px; border-radius: 4px; display: inline-block;">-</p>
                     </div>
                 </div>
             </div>
@@ -47,7 +47,7 @@
             </div>
 
             <!-- Preview Special Assignment -->
-            <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; border-left: 3px solid #f59e0b; padding-left: 12px;">
+            <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; border-left: 3px solid #f97316; padding-left: 12px;">
                 <h5 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600;">Penugasan Khusus</h5>
                 <p id="preview-special-assignment" style="margin: 0; font-size: 13px; color: #666; line-height: 1.6;">
                     <span style="color: #999; font-style: italic;">-</span>
@@ -63,7 +63,7 @@
             </div>
 
             <!-- Preview Assessment -->
-            <div style="margin-bottom: 20px; border-left: 3px solid #0284c7; padding-left: 12px;">
+            <div style="margin-bottom: 20px; border-left: 3px solid #f97316; padding-left: 12px;">
                 <h5 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600;">Penilaian Harian</h5>
                 <div id="preview-assessment" style="font-size: 12px;">
                     <p style="margin: 0; color: #999; font-style: italic;">Belum ada penilaian</p>

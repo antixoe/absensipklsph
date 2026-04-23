@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     
     // Absence CRUD
     Route::get('/absence', [AbsenceController::class, 'index'])->name('absence.index');
+    Route::get('/absence/create', [AbsenceController::class, 'create'])->name('absence.create');
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
     Route::get('/absence/all', [AbsenceController::class, 'all'])->name('absence.all');
     

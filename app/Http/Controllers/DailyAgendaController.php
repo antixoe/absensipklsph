@@ -13,11 +13,35 @@ use Carbon\Carbon;
 class DailyAgendaController extends Controller
 {
     /**
+     * Check if the current user is an instructor or admin.
+     */
+    private function isInstructorOrAdmin()
+    {
+        $currentUser = Auth::user();
+        $instructorRoles = [
+            'industry_supervisor',
+            'head_of_department',
+            'homeroom_teacher',
+            'school_principal',
+            'admin',
+        ];
+        
+        return $currentUser->role && in_array($currentUser->role->name, $instructorRoles);
+    }
+
+    /**
      * Show all daily agendas or create a new one.
      */
     public function index()
     {
         $currentUser = Auth::user();
+        
+        // If instructor or admin, show all student agendas
+        if ($this->isInstructorOrAdmin()) {
+            return $this->indexForInstructors();
+        }
+
+        // For students, show only their own agendas
         $currentStudent = Student::where('user_id', $currentUser->id)->first();
 
         if (!$currentStudent) {
@@ -32,11 +56,50 @@ class DailyAgendaController extends Controller
     }
 
     /**
+     * Show all daily agendas for instructors and admins.
+     */
+    public function indexForInstructors()
+    {
+        $currentUser = Auth::user();
+        
+        // Get all agendas with student information, ordered by date
+        $agendasQuery = DailyAgenda::with('student.user')
+            ->orderByDesc('agenda_date');
+
+        // Optionally filter by date range
+        if (request('date_from')) {
+            $agendasQuery->whereDate('agenda_date', '>=', request('date_from'));
+        }
+        if (request('date_to')) {
+            $agendasQuery->whereDate('agenda_date', '<=', request('date_to'));
+        }
+
+        // Optionally filter by student
+        if (request('student_id')) {
+            $agendasQuery->where('student_id', request('student_id'));
+        }
+
+        $agendas = $agendasQuery->paginate(15);
+        
+        // Get list of students for filter dropdown
+        $students = Student::with('user')->orderBy('user_id')->get();
+
+        return view('daily-agenda.index-instructor', compact('agendas', 'students', 'currentUser'));
+    }
+
+    /**
      * Show the form to create a new daily agenda.
      */
     public function create()
     {
         $currentUser = Auth::user();
+        
+        // Only students can create agendas
+        if ($this->isInstructorOrAdmin()) {
+            return redirect()->route('daily-agenda.index')
+                ->with('error', 'Only students can create agendas.');
+        }
+
         $currentStudent = Student::where('user_id', $currentUser->id)->first();
 
         if (!$currentStudent) {
@@ -59,6 +122,12 @@ class DailyAgendaController extends Controller
             ->whereDate('absence_date', Carbon::today())
             ->orderBy('scanned_qr_at', 'desc')
             ->first();
+
+        // Check if absence exists - students must submit absence before creating agenda
+        if (!$todayAbsence) {
+            return redirect()->route('absence.create')
+                ->with('error', 'Anda harus melakukan absensi terlebih dahulu sebelum membuat agenda harian.');
+        }
 
         $timeIn = null;
         $timeOut = null;
@@ -159,6 +228,14 @@ class DailyAgendaController extends Controller
     public function show(DailyAgenda $dailyAgenda)
     {
         $currentUser = Auth::user();
+        
+        // Check if user is instructor or admin
+        if ($this->isInstructorOrAdmin()) {
+            // Instructors and admins can view any agenda
+            return view('daily-agenda.show', compact('dailyAgenda'));
+        }
+
+        // For students, check if it's their own agenda
         $currentStudent = Student::where('user_id', $currentUser->id)->first();
 
         // Check authorization
@@ -176,6 +253,13 @@ class DailyAgendaController extends Controller
     public function edit(DailyAgenda $dailyAgenda)
     {
         $currentUser = Auth::user();
+        
+        // Only students can edit agendas
+        if ($this->isInstructorOrAdmin()) {
+            return redirect()->route('daily-agenda.index')
+                ->with('error', 'Only students can edit agendas.');
+        }
+
         $currentStudent = Student::where('user_id', $currentUser->id)->first();
 
         if (!$currentStudent || $dailyAgenda->student_id !== $currentStudent->id) {

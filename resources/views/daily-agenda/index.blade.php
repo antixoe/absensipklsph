@@ -61,10 +61,10 @@
                                     <br><small style="color: #999;">{{ $agenda->agenda_date->format('l') }}</small>
                                 </td>
                                 <td style="padding: 12px; font-size: 14px;">
-                                    <span style="background: #dbeafe; color: #082f49; padding: 4px 8px; border-radius: 4px;">{{ $agenda->time_in ?? '-' }}</span>
+                                    <span style="background: #fed7aa; color: #92400e; padding: 4px 8px; border-radius: 4px;">{{ $agenda->time_in ?? '-' }}</span>
                                 </td>
                                 <td style="padding: 12px; font-size: 14px;">
-                                    <span style="background: #dbeafe; color: #082f49; padding: 4px 8px; border-radius: 4px;">{{ $agenda->time_out ?? '-' }}</span>
+                                    <span style="background: #fed7aa; color: #92400e; padding: 4px 8px; border-radius: 4px;">{{ $agenda->time_out ?? '-' }}</span>
                                 </td>
                                 <td style="padding: 12px; font-size: 14px;">
                                     @if ($agenda->submitted_at)
@@ -80,15 +80,15 @@
                                 <td style="padding: 12px; text-align: center;">
                                     <div style="display: flex; gap: 8px; justify-content: center;">
                                         <a href="{{ route('daily-agenda.show', $agenda->id) }}" 
-                                           style="padding: 6px 12px; background: #0284c7; color: white; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;"
-                                           onmouseover="this.style.background='#0369a1'"
-                                           onmouseout="this.style.background='#0284c7'">
+                                           style="padding: 6px 12px; background: #f97316; color: white; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;"
+                                           onmouseover="this.style.background='#ea580c'"
+                                           onmouseout="this.style.background='#f97316'">
                                             <i class="bi bi-eye"></i> Lihat
                                         </a>
                                         <a href="{{ route('daily-agenda.edit', $agenda->id) }}" 
-                                           style="padding: 6px 12px; background: #f59e0b; color: white; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;"
-                                           onmouseover="this.style.background='#d97706'"
-                                           onmouseout="this.style.background='#f59e0b'">
+                                           style="padding: 6px 12px; background: #f97316; color: white; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;"
+                                           onmouseover="this.style.background='#ea580c'"
+                                           onmouseout="this.style.background='#f97316'">
                                             <i class="bi bi-pencil"></i> Edit
                                         </a>
                                         <button onclick="showDeleteConfirm('{{ route('daily-agenda.destroy', $agenda->id) }}')" 

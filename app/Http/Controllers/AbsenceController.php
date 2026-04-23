@@ -314,6 +314,14 @@ class AbsenceController extends Controller
     }
 
     /**
+     * Show the create form (redirect to index where the form is)
+     */
+    public function create()
+    {
+        return redirect()->route('absence.index');
+    }
+
+    /**
      * Send notifications to admins and teachers when a student marks absence
      */
     private function sendAbsenceNotifications(Absence $absence, Student $student, bool $isQRSubmission)
