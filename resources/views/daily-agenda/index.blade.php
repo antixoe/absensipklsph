@@ -1,6 +1,130 @@
 @extends('layouts.app')
 
+@section('styles')
+    <style>
+        .agenda-warning-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(6px);
+            z-index: 10050;
+        }
+
+        .agenda-warning-overlay.active {
+            display: flex;
+        }
+
+        .agenda-warning-card {
+            width: min(560px, 100%);
+            border-radius: 24px;
+            background: linear-gradient(180deg, #ffffff 0%, #fff8f1 100%);
+            box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+            overflow: hidden;
+            border: 1px solid rgba(249, 115, 22, 0.18);
+        }
+
+        .agenda-warning-head {
+            padding: 24px 24px 18px;
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 55%, #fde68a 100%);
+            color: #1f2937;
+        }
+
+        .agenda-warning-kicker {
+            margin: 0 0 8px 0;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(31, 41, 55, 0.7);
+        }
+
+        .agenda-warning-title {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .agenda-warning-body {
+            padding: 22px 24px 24px;
+        }
+
+        .agenda-warning-message {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.8;
+            color: #334155;
+        }
+
+        .agenda-warning-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .agenda-warning-close {
+            border: none;
+            border-radius: 999px;
+            padding: 10px 18px;
+            background: #f97316;
+            color: #ffffff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .agenda-warning-close:hover {
+            background: #ea580c;
+        }
+
+        .agenda-warning-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.6);
+            color: #9a3412;
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 640px) {
+            .agenda-warning-head {
+                padding: 20px 20px 16px;
+            }
+
+            .agenda-warning-body {
+                padding: 18px 20px 20px;
+            }
+
+            .agenda-warning-title {
+                font-size: 20px;
+            }
+
+            .agenda-warning-actions {
+                flex-direction: column;
+            }
+
+            .agenda-warning-close {
+                width: 100%;
+            }
+        }
+    </style>
+@endsection
+
 @section('content')
+    @php
+        $canCreateAgenda = $canCreateAgenda ?? true;
+        $agendaBlockMessage = $agendaBlockMessage ?? null;
+        $agendaWarningMessage = session('agenda_warning') ?: $agendaBlockMessage;
+    @endphp
+
     <div class="page-header">
         <h1><i class="bi bi-calendar-event" style="margin-right: 8px;"></i>Daftar Agenda Harian</h1>
         <p>Kelola semua agenda harian Anda</p>
@@ -30,9 +154,15 @@
     <div class="card" style="margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Agenda Harian</h2>
-            <a href="{{ route('daily-agenda.create') }}" class="btn" style="gap: 8px; display: flex; align-items: center;">
-                <i class="bi bi-plus-circle"></i>Buat Agenda Baru
-            </a>
+            @if ($canCreateAgenda)
+                <a href="{{ route('daily-agenda.create') }}" class="btn" style="gap: 8px; display: flex; align-items: center;">
+                    <i class="bi bi-plus-circle"></i>Buat Agenda Baru
+                </a>
+            @else
+                <button type="button" class="btn" id="open-agenda-warning" style="gap: 8px; display: flex; align-items: center;">
+                    <i class="bi bi-plus-circle"></i>Buat Agenda Baru
+                </button>
+            @endif
         </div>
 
         @if ($agendas->count() > 0)
@@ -50,6 +180,32 @@
                     </thead>
                     <tbody>
                         @foreach ($agendas as $key => $agenda)
+                            @php($agendaModalData = [
+                                'student_name' => $agenda->student?->user?->name ?? auth()->user()->name,
+                                'nim' => $agenda->student?->nim ?? '-',
+                                'agenda_date' => $agenda->agenda_date?->format('d/m/Y') ?? '-',
+                                'day_name' => $agenda->agenda_date?->format('l') ?? '-',
+                                'time_in' => $agenda->time_in ?? '-',
+                                'time_out' => $agenda->time_out ?? '-',
+                                'submitted_at' => $agenda->submitted_at?->format('d/m/Y H:i') ?? '',
+                                'completion_status' => $agenda->completion_status ?? 'pending',
+                                'completion_label' => $agenda->is_completed ? ($agenda->completion_status === 'approved' ? 'Disetujui' : ($agenda->completion_status === 'rejected' ? 'Ditolak' : 'Pending')) : 'Pending',
+                                'completed_by' => $agenda->completedBy?->name ?? '',
+                                'completed_at' => $agenda->completed_at?->format('d/m/Y H:i') ?? '',
+                                'instructor_notes' => $agenda->instructor_notes ?? '',
+                                'work_plan' => $agenda->work_plan ?? [],
+                                'work_realization' => $agenda->work_realization ?? [],
+                                'special_assignment' => $agenda->special_assignment ?? '',
+                                'problems_found' => $agenda->problems_found ?? '',
+                                'daily_assessment' => $agenda->daily_assessment ?? [],
+                                'notes' => $agenda->notes ?? '',
+                                'student_approved' => (bool) $agenda->student_approved,
+                                'student_approved_at' => $agenda->student_approved_at?->format('d/m/Y H:i') ?? '',
+                                'company_mentor_approved' => (bool) $agenda->company_mentor_approved,
+                                'company_mentor_approved_at' => $agenda->company_mentor_approved_at?->format('d/m/Y H:i') ?? '',
+                                'school_teacher_approved' => (bool) $agenda->school_teacher_approved,
+                                'school_teacher_approved_at' => $agenda->school_teacher_approved_at?->format('d/m/Y H:i') ?? '',
+                            ])
                             <tr style="border-bottom: 1px solid #e5e7eb; transition: background 0.2s;">
                                 <td style="padding: 12px; font-size: 14px;">
                                     <span style="background: #f97316; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600;">
@@ -79,23 +235,13 @@
                                 </td>
                                 <td style="padding: 12px; text-align: center;">
                                     <div style="display: flex; gap: 8px; justify-content: center;">
-                                        <a href="{{ route('daily-agenda.show', $agenda->id) }}" 
-                                           style="padding: 6px 12px; background: #f97316; color: white; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;"
-                                           onmouseover="this.style.background='#ea580c'"
-                                           onmouseout="this.style.background='#f97316'">
+                                        <button type="button"
+                                                onclick="openAgendaModal(this)"
+                                                data-agenda='@json($agendaModalData)'
+                                                style="padding: 6px 12px; background: #f97316; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;"
+                                                onmouseover="this.style.background='#ea580c'"
+                                                onmouseout="this.style.background='#f97316'">
                                             <i class="bi bi-eye"></i> Lihat
-                                        </a>
-                                        <a href="{{ route('daily-agenda.edit', $agenda->id) }}" 
-                                           style="padding: 6px 12px; background: #f97316; color: white; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;"
-                                           onmouseover="this.style.background='#ea580c'"
-                                           onmouseout="this.style.background='#f97316'">
-                                            <i class="bi bi-pencil"></i> Edit
-                                        </a>
-                                        <button onclick="showDeleteConfirm('{{ route('daily-agenda.destroy', $agenda->id) }}')" 
-                                                style="padding: 6px 12px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;"
-                                                onmouseover="this.style.background='#b91c1c'"
-                                                onmouseout="this.style.background='#dc2626'">
-                                            <i class="bi bi-trash"></i> Hapus
                                         </button>
                                     </div>
                                 </td>
@@ -114,53 +260,87 @@
                 <i class="bi bi-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 15px;"></i>
                 <h3 style="color: #999; margin: 0 0 10px 0; font-size: 18px;">Tidak ada agenda harian</h3>
                 <p style="color: #999; margin: 0 0 20px 0; font-size: 14px;">Buat agenda harian baru untuk memulai</p>
-                <a href="{{ route('daily-agenda.create') }}" class="btn" style="gap: 8px; display: inline-flex; align-items: center;">
-                    <i class="bi bi-plus-circle"></i>Buat Agenda Baru
-                </a>
+                @if ($canCreateAgenda)
+                    <a href="{{ route('daily-agenda.create') }}" class="btn" style="gap: 8px; display: inline-flex; align-items: center;">
+                        <i class="bi bi-plus-circle"></i>Buat Agenda Baru
+                    </a>
+                @else
+                    <button type="button" class="btn" id="open-agenda-warning-empty" style="gap: 8px; display: inline-flex; align-items: center;">
+                        <i class="bi bi-plus-circle"></i>Buat Agenda Baru
+                    </button>
+                @endif
             </div>
         @endif
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 9999; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); max-width: 400px; width: 90%;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <i class="bi bi-exclamation-triangle-fill" style="font-size: 48px; color: #dc2626;"></i>
+    @include('daily-agenda.partials.agenda-modal')
+
+    <div class="agenda-warning-overlay {{ session('agenda_warning') ? 'active' : '' }}" id="agenda-warning-overlay" role="dialog" aria-modal="true" aria-labelledby="agenda-warning-title">
+        <div class="agenda-warning-card">
+            <div class="agenda-warning-head">
+                <div class="agenda-warning-icon">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <p class="agenda-warning-kicker">Agenda Tertahan</p>
+                <h3 class="agenda-warning-title" id="agenda-warning-title">Absensi belum lengkap</h3>
             </div>
-            <h3 style="margin: 0 0 10px 0; color: #333; font-size: 18px; font-weight: 600; text-align: center;">Konfirmasi Penghapusan</h3>
-            <p style="margin: 0 0 20px 0; color: #666; text-align: center; font-size: 14px;">Apakah Anda yakin ingin menghapus agenda harian ini? Tindakan ini tidak dapat dibatalkan.</p>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="closeDeleteModal()" style="flex: 1; padding: 10px; background: #e5e7eb; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                    Batal
-                </button>
-                <form id="deleteForm" method="POST" style="flex: 1;">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" style="width: 100%; padding: 10px; background: #dc2626; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                        Hapus
+            <div class="agenda-warning-body">
+                <p class="agenda-warning-message" id="agenda-warning-message">
+                    {{ $agendaWarningMessage ?? 'Siswa perlu melakukan absensi terlebih dahulu sebelum membuat agenda harian.' }}
+                </p>
+
+                <div class="agenda-warning-actions">
+                    <button type="button" class="agenda-warning-close" id="close-agenda-warning">
+                        Tutup
                     </button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        function showDeleteConfirm(url) {
-            document.getElementById('deleteForm').action = url;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('agenda-warning-overlay');
+            const openButtons = [
+                document.getElementById('open-agenda-warning'),
+                document.getElementById('open-agenda-warning-empty'),
+            ].filter(Boolean);
+            const closeButton = document.getElementById('close-agenda-warning');
 
-        function closeDeleteModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-        }
+            const openModal = () => {
+                if (overlay) {
+                    overlay.classList.add('active');
+                }
+            };
 
-        // Close modal when clicking outside
-        document.getElementById('deleteModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeDeleteModal();
+            const closeModal = () => {
+                if (overlay) {
+                    overlay.classList.remove('active');
+                }
+            };
+
+            openButtons.forEach((button) => {
+                button.addEventListener('click', openModal);
+            });
+
+            if (closeButton) {
+                closeButton.addEventListener('click', closeModal);
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', (event) => {
+                    if (event.target === overlay) {
+                        closeModal();
+                    }
+                });
+            }
+
+            if (overlay && {{ session('agenda_warning') ? 'true' : 'false' }}) {
+                openModal();
             }
         });
     </script>
+
 @endsection
 
 

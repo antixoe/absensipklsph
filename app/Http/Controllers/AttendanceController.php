@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -10,11 +11,12 @@ class AttendanceController extends Controller
 {
     public function index()
     {
-        $student = Auth::user()->student;
-        if (!$student) {
-            abort(403, 'Student profile not found');
+        if ($redirect = $this->requireStudentAccess()) {
+            return $redirect;
         }
-        
+
+        $student = Auth::user()->student;
+
         $attendances = Attendance::where('student_id', $student->id)
             ->orderBy('attendance_date', 'desc')
             ->paginate(10);
@@ -24,15 +26,20 @@ class AttendanceController extends Controller
 
     public function create()
     {
+        if ($redirect = $this->requireStudentAccess()) {
+            return $redirect;
+        }
+
         return view('attendance.create');
     }
 
     public function store(Request $request)
     {
-        $student = Auth::user()->student;
-        if (!$student) {
-            abort(403, 'Student profile not found');
+        if ($redirect = $this->requireStudentAccess()) {
+            return $redirect;
         }
+
+        $student = Auth::user()->student;
 
         $validated = $request->validate([
             'date' => ['required', 'date'],
@@ -60,6 +67,10 @@ class AttendanceController extends Controller
 
     public function show(Attendance $attendance)
     {
+        if ($redirect = $this->requireStudentAccess()) {
+            return $redirect;
+        }
+
         $student = Auth::user()->student;
         if ($attendance->student_id !== $student->id) {
             abort(403);
@@ -69,6 +80,10 @@ class AttendanceController extends Controller
 
     public function edit(Attendance $attendance)
     {
+        if ($redirect = $this->requireStudentAccess()) {
+            return $redirect;
+        }
+
         $student = Auth::user()->student;
         if ($attendance->student_id !== $student->id) {
             abort(403);
@@ -78,6 +93,10 @@ class AttendanceController extends Controller
 
     public function update(Request $request, Attendance $attendance)
     {
+        if ($redirect = $this->requireStudentAccess()) {
+            return $redirect;
+        }
+
         $student = Auth::user()->student;
         if ($attendance->student_id !== $student->id) {
             abort(403);
@@ -108,6 +127,10 @@ class AttendanceController extends Controller
 
     public function destroy(Attendance $attendance)
     {
+        if ($redirect = $this->requireStudentAccess()) {
+            return $redirect;
+        }
+
         $student = Auth::user()->student;
         if ($attendance->student_id !== $student->id) {
             abort(403);
@@ -115,5 +138,20 @@ class AttendanceController extends Controller
 
         $attendance->delete();
         return redirect('/attendance')->with('success', 'Attendance record deleted successfully!');
+    }
+
+    private function requireStudentAccess()
+    {
+        $user = Auth::user();
+
+        if (!$user->hasRole(Role::STUDENT)) {
+            return redirect()->route('dashboard')->with('error', 'Only students can access attendance records.');
+        }
+
+        if (!$user->student) {
+            return redirect()->route('dashboard')->with('error', 'Student profile not found.');
+        }
+
+        return null;
     }
 }

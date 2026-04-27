@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Attendance;
+use App\Models\Role;
 use App\Models\Student;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Validation\ValidationException;
 
 class AttendanceController extends \Illuminate\Routing\Controller
 {
@@ -15,14 +14,14 @@ class AttendanceController extends \Illuminate\Routing\Controller
      */
     public function index(Request $request)
     {
-        $user = $request->user();
+        if ($response = $this->requireStudentAccess($request)) {
+            return $response;
+        }
+
+        $student = $request->user()->student;
         $query = Attendance::query();
 
-        // Filter by student if the user is a student
-        if ($user->role_id == 2) { // Student role
-            $student = $user->student;
-            $query->where('student_id', $student->id);
-        }
+        $query->where('student_id', $student->id);
 
         // Apply filters
         if ($request->has('date')) {
@@ -47,7 +46,13 @@ class AttendanceController extends \Illuminate\Routing\Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        if ($response = $this->requireStudentAccess($request)) {
+            return $response;
+        }
+
+        $student = $request->user()->student;
+
+        $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
             'attendance_date' => 'required|date',
             'check_in_time' => 'nullable|date_format:H:i:s',
@@ -55,7 +60,13 @@ class AttendanceController extends \Illuminate\Routing\Controller
             'status' => 'required|in:present,late,absent,sick,permission',
         ]);
 
-        $attendance = Attendance::create($request->validated());
+        $attendance = Attendance::create([
+            'student_id' => $student->id,
+            'attendance_date' => $validated['attendance_date'],
+            'check_in_time' => $validated['check_in_time'] ?? null,
+            'check_out_time' => $validated['check_out_time'] ?? null,
+            'status' => $validated['status'],
+        ]);
 
         return response()->json([
             'message' => 'Attendance record created successfully',
@@ -68,6 +79,15 @@ class AttendanceController extends \Illuminate\Routing\Controller
      */
     public function show(Attendance $attendance)
     {
+        if ($response = $this->requireStudentAccess(request())) {
+            return $response;
+        }
+
+        $student = request()->user()->student;
+        if ($attendance->student_id !== $student->id) {
+            return response()->json(['message' => 'Unauthorized access.'], 403);
+        }
+
         return response()->json($attendance->load('student.user'));
     }
 
@@ -76,7 +96,16 @@ class AttendanceController extends \Illuminate\Routing\Controller
      */
     public function update(Request $request, Attendance $attendance)
     {
-        $request->validate([
+        if ($response = $this->requireStudentAccess($request)) {
+            return $response;
+        }
+
+        $student = $request->user()->student;
+        if ($attendance->student_id !== $student->id) {
+            return response()->json(['message' => 'Unauthorized access.'], 403);
+        }
+
+        $validated = $request->validate([
             'attendance_date' => 'nullable|date',
             'check_in_time' => 'nullable|date_format:H:i:s',
             'check_out_time' => 'nullable|date_format:H:i:s',
@@ -84,7 +113,7 @@ class AttendanceController extends \Illuminate\Routing\Controller
             'notes' => 'nullable|string',
         ]);
 
-        $attendance->update($request->validated());
+        $attendance->update($validated);
 
         return response()->json([
             'message' => 'Attendance record updated successfully',
@@ -97,6 +126,15 @@ class AttendanceController extends \Illuminate\Routing\Controller
      */
     public function destroy(Attendance $attendance)
     {
+        if ($response = $this->requireStudentAccess(request())) {
+            return $response;
+        }
+
+        $student = request()->user()->student;
+        if ($attendance->student_id !== $student->id) {
+            return response()->json(['message' => 'Unauthorized access.'], 403);
+        }
+
         $attendance->delete();
 
         return response()->json([
@@ -109,14 +147,17 @@ class AttendanceController extends \Illuminate\Routing\Controller
      */
     public function checkIn(Request $request)
     {
+        if ($response = $this->requireStudentAccess($request)) {
+            return $response;
+        }
+
         $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $user = $request->user();
-        $student = $user->student;
+        $student = $request->user()->student;
 
         // Check if already checked in today
         $existingAttendance = Attendance::where('student_id', $student->id)
@@ -160,14 +201,17 @@ class AttendanceController extends \Illuminate\Routing\Controller
      */
     public function checkOut(Request $request)
     {
+        if ($response = $this->requireStudentAccess($request)) {
+            return $response;
+        }
+
         $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $user = $request->user();
-        $student = $user->student;
+        $student = $request->user()->student;
 
         // Get today's attendance
         $attendance = Attendance::where('student_id', $student->id)
@@ -210,7 +254,16 @@ class AttendanceController extends \Illuminate\Routing\Controller
      */
     public function report(Student $student, Request $request)
     {
-        $query = $student->attendances();
+        if ($response = $this->requireStudentAccess($request)) {
+            return $response;
+        }
+
+        $currentStudent = $request->user()->student;
+        if ($student->id !== $currentStudent->id) {
+            return response()->json(['message' => 'You can only view your own attendance report.'], 403);
+        }
+
+        $query = $currentStudent->attendances();
 
         // Filter by month
         if ($request->has('month')) {
@@ -237,5 +290,27 @@ class AttendanceController extends \Illuminate\Routing\Controller
             'summary' => $summary,
             'details' => $attendances,
         ]);
+    }
+
+    /**
+     * Ensure the authenticated user is a student.
+     */
+    private function requireStudentAccess(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || !$user->hasRole(Role::STUDENT)) {
+            return response()->json([
+                'message' => 'Only students can access attendance records.',
+            ], 403);
+        }
+
+        if (!$user->student) {
+            return response()->json([
+                'message' => 'Student profile not found.',
+            ], 404);
+        }
+
+        return null;
     }
 }

@@ -584,15 +584,21 @@
                     </span>
                 @endif
             </a>
-            @if(!auth()->user()->hasRole('admin'))
-                <a href="/absence" class="{{ request()->is('absence*') && !request()->is('absence/all*') ? 'active' : '' }}">Absence</a>
-                <a href="{{ route('daily-agenda.index') }}" class="{{ request()->is('daily-agenda*') ? 'active' : '' }}">
-                    <i class="bi bi-calendar-event" style="margin-right: 4px;"></i>Daily Agenda
+            @if(auth()->user()->hasRole('student'))
+                <a href="{{ route('absen.index') }}" class="{{ request()->is('absen') || (request()->is('absence') && !request()->is('absence/all*')) ? 'active' : '' }}">Absen</a>
+                <a href="{{ route('absen.pulang') }}" class="{{ request()->is('absen-pulang*') ? 'active' : '' }}">
+                    <i class="bi bi-box-arrow-right" style="margin-right: 4px;"></i>Absen Pulang
                 </a>
             @endif
+            <a href="{{ route('daily-agenda.index') }}" class="{{ request()->is('daily-agenda*') ? 'active' : '' }}">
+                <i class="bi bi-calendar-event" style="margin-right: 4px;"></i>Daily Agenda
+            </a>
             @if(auth()->user()->hasAnyRole(['homeroom_teacher', 'head_of_department', 'industry_supervisor', 'school_principal', 'admin']))
                 <a href="{{ route('absence.all') }}" class="{{ request()->is('absence/all*') ? 'active' : '' }}">
                     <i class="bi bi-list-check" style="margin-right: 4px;"></i>All Absences
+                </a>
+                <a href="{{ route('absen.pulang.all') }}" class="{{ request()->is('absen-pulang/all*') ? 'active' : '' }}">
+                    <i class="bi bi-box-arrow-right" style="margin-right: 4px;"></i>Absen Pulang
                 </a>
                 <a href="{{ route('qrcode.index') }}" class="{{ request()->is('qrcode*') ? 'active' : '' }}">
                     <i class="bi bi-qr-code" style="margin-right: 4px;"></i>QR Codes

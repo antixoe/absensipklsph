@@ -49,19 +49,26 @@ Route::middleware('auth')->group(function () {
     Route::delete('/attendance/{attendance}', [AttendanceController::class, 'destroy'])->name('attendance.destroy');
     
     // Absence CRUD
+    Route::get('/absen', [AbsenceController::class, 'index'])->name('absen.index');
     Route::get('/absence', [AbsenceController::class, 'index'])->name('absence.index');
     Route::get('/absence/create', [AbsenceController::class, 'create'])->name('absence.create');
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
     Route::get('/absence/all', [AbsenceController::class, 'all'])->name('absence.all');
+    Route::get('/absen-pulang', [QRCodeController::class, 'scanner'])->name('absen.pulang');
+    Route::get('/absen-pulang/all', [AbsenceController::class, 'all'])->name('absen.pulang.all');
     
     // Daily Agenda CRUD
     Route::get('/daily-agenda', [DailyAgendaController::class, 'index'])->name('daily-agenda.index');
     Route::get('/daily-agenda/create', [DailyAgendaController::class, 'create'])->name('daily-agenda.create');
     Route::post('/daily-agenda', [DailyAgendaController::class, 'store'])->name('daily-agenda.store');
-    Route::get('/daily-agenda/{dailyAgenda}', [DailyAgendaController::class, 'show'])->name('daily-agenda.show');
     Route::get('/daily-agenda/{dailyAgenda}/edit', [DailyAgendaController::class, 'edit'])->name('daily-agenda.edit');
     Route::put('/daily-agenda/{dailyAgenda}', [DailyAgendaController::class, 'update'])->name('daily-agenda.update');
-    Route::delete('/daily-agenda/{dailyAgenda}', [DailyAgendaController::class, 'destroy'])->name('daily-agenda.destroy');
+    Route::get('/daily-agenda/{dailyAgenda}', [DailyAgendaController::class, 'show'])->name('daily-agenda.show');
+    Route::post('/daily-agenda/{dailyAgenda}/mark-complete', [DailyAgendaController::class, 'markComplete'])->name('daily-agenda.mark-complete');
+    Route::post('/daily-agenda/{dailyAgenda}/unmark-complete', [DailyAgendaController::class, 'unmarkComplete'])->name('daily-agenda.unmark-complete');
+    Route::post('/daily-agenda/{dailyAgenda}/approve-student', [DailyAgendaController::class, 'approveStudent'])->name('daily-agenda.approve-student');
+    Route::post('/daily-agenda/{dailyAgenda}/approve-company-mentor', [DailyAgendaController::class, 'approveCompanyMentor'])->name('daily-agenda.approve-company-mentor');
+    Route::post('/daily-agenda/{dailyAgenda}/approve-school-teacher', [DailyAgendaController::class, 'approveSchoolTeacher'])->name('daily-agenda.approve-school-teacher');
     
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

@@ -3,7 +3,7 @@
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-bell" style="margin-right: 8px;"></i>My Notifications</h1>
-        <p>View your absence approval status and admin messages</p>
+        <p>View your absence, daily agenda, and admin messages</p>
     </div>
 
     <!-- Success/Error Messages -->
@@ -74,7 +74,35 @@
                             @endif
 
                             <!-- Status/Method -->
-                            @if(isset($notification->data['action']))
+                            @if(isset($notification->data['review_type']))
+                                <div>
+                                    <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">REVIEW TYPE</p>
+                                    <p style="margin: 0; font-size: 14px; color: #222;">{{ $notification->data['review_type'] }}</p>
+                                </div>
+                                <div>
+                                    <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">STATUS</p>
+                                    <p style="margin: 0; font-size: 14px;">
+                                        @if($notification->data['status'] === 'approved')
+                                            <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: #dcfce7; color: #166534; font-weight: 600; font-size: 12px;">
+                                                <i class="bi bi-check-circle-fill" style="margin-right: 4px;"></i>Approved
+                                            </span>
+                                        @else
+                                            <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: #fee2e2; color: #991b1b; font-weight: 600; font-size: 12px;">
+                                                <i class="bi bi-x-circle-fill" style="margin-right: 4px;"></i>Rejected
+                                            </span>
+                                        @endif
+                                    </p>
+                                </div>
+                            @elseif(isset($notification->data['agenda_id']) && isset($notification->data['student_name']) && !isset($notification->data['review_type']))
+                                <div>
+                                    <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">TIME IN</p>
+                                    <p style="margin: 0; font-size: 14px; color: #222;">{{ $notification->data['time_in'] ?? 'N/A' }}</p>
+                                </div>
+                                <div>
+                                    <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">TIME OUT</p>
+                                    <p style="margin: 0; font-size: 14px; color: #222;">{{ $notification->data['time_out'] ?? 'N/A' }}</p>
+                                </div>
+                            @elseif(isset($notification->data['action']))
                                 <!-- Old Approval Notification -->
                                 <div>
                                     <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">STATUS</p>
@@ -124,6 +152,21 @@
                                 </div>
                             </div>
                         @endif
+
+                        @if(isset($notification->data['reviewer_name']))
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div>
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">REVIEWER</p>
+                                        <p style="margin: 0; font-size: 14px; color: #222;">{{ $notification->data['reviewer_name'] }}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; color: #666; font-weight: 600;">AGENDA DATE</p>
+                                        <p style="margin: 0; font-size: 14px; color: #222;">{{ $notification->data['agenda_date'] ?? 'N/A' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Admin Notes (only for approval notifications) -->
@@ -146,6 +189,17 @@
                             </p>
                             <p style="margin: 0; font-size: 14px; color: #374151; font-family: monospace;">
                                 {{ $notification->data['ip_address'] }}
+                            </p>
+                        </div>
+                    @endif
+
+                    @if(isset($notification->data['notes']) && $notification->data['notes'])
+                        <div style="background: #eef2ff; padding: 12px; border-radius: 6px; border-left: 3px solid #6366f1; margin-bottom: 12px;">
+                            <p style="margin: 0 0 5px 0; font-size: 12px; color: #4338ca; font-weight: 600;">
+                                <i class="bi bi-chat-left-text" style="margin-right: 4px;"></i>NOTES
+                            </p>
+                            <p style="margin: 0; font-size: 14px; color: #4338ca;">
+                                {{ $notification->data['notes'] }}
                             </p>
                         </div>
                     @endif

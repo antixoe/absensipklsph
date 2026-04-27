@@ -81,6 +81,41 @@ class User extends Authenticatable
     }
 
     /**
+     * Keep student accounts usable even if the profile row was not created elsewhere.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (User $user) {
+            $user->ensureStudentProfile();
+        });
+    }
+
+    /**
+     * Ensure a student profile exists for this user.
+     */
+    public function ensureStudentProfile(): ?Student
+    {
+        if (!$this->hasRole(Role::STUDENT)) {
+            return null;
+        }
+
+        return $this->student()->firstOrCreate(
+            ['user_id' => $this->id],
+            [
+                'internship_program_id' => null,
+                'nim' => 'AUTO-' . $this->id,
+                'school' => null,
+                'major' => null,
+                'phone' => $this->phone,
+                'company_placement' => null,
+                'start_date' => null,
+                'end_date' => null,
+                'status' => 'active',
+            ]
+        );
+    }
+
+    /**
      * Get the activity logs for this user.
      */
     public function activityLogs(): HasMany

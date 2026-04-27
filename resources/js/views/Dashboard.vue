@@ -32,6 +32,7 @@
         <h2 class="text-2xl font-bold text-gray-900 mb-4">Quick Actions</h2>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <router-link
+            v-if="authStore.user?.role?.name === 'student'"
             to="/attendance"
             class="block bg-orange-500 hover:bg-orange-600 text-white px-4 py-3 rounded-lg text-center font-semibold transition"
           >

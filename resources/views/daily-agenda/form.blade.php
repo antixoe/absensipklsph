@@ -2,8 +2,8 @@
 
 @section('content')
     <div class="page-header">
-        <h1><i class="bi bi-calendar-event" style="margin-right: 8px;"></i>{{ isset($dailyAgenda) ? 'Edit Agenda Harian' : 'Buat Agenda Harian' }}</h1>
-        <p>{{ isset($dailyAgenda) ? 'Update your daily agenda' : 'Plan your work for the day' }}</p>
+        <h1><i class="bi bi-calendar-event" style="margin-right: 8px;"></i>Buat Agenda Harian</h1>
+        <p>Plan your work for the day</p>
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: 0 auto;">
@@ -109,18 +109,19 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ isset($dailyAgenda) ? route('daily-agenda.update', $dailyAgenda->id) : route('daily-agenda.store') }}" style="display: flex; flex-direction: column; gap: 20px;">
+            <form method="POST" action="{{ route('daily-agenda.store') }}" style="display: flex; flex-direction: column; gap: 20px;">
                 @csrf
-                @if (isset($dailyAgenda))
-                    @method('PUT')
-                @endif
 
                 <!-- Hari / Tanggal -->
                 <div>
-                    <label for="agenda_date" style="display: block; margin-bottom: 8px; font-weight: 600;">Hari / Tanggal</label>
+                    <label for="agenda_date" style="display: block; margin-bottom: 8px; font-weight: 600;">Hari / Tanggal <span style="font-size: 12px; color: #999;">(otomatis hari ini)</span></label>
                     <input type="date" id="agenda_date" name="agenda_date" 
-                           value="{{ old('agenda_date', isset($dailyAgenda) ? $dailyAgenda->agenda_date->format('Y-m-d') : date('Y-m-d')) }}" 
+                           value="{{ old('agenda_date', date('Y-m-d')) }}"
+                           readonly
                            style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px;">
+                    <p style="margin: 6px 0 0 0; font-size: 12px; color: #999;">
+                        Siswa hanya dapat membuat satu agenda untuk setiap hari.
+                    </p>
                     @error('agenda_date')
                         <span style="color: #dc2626; font-size: 12px;">{{ $message }}</span>
                     @enderror
@@ -131,7 +132,7 @@
                     <div>
                         <label for="time_in" style="display: block; margin-bottom: 8px; font-weight: 600;">Jam Datang <span style="font-size: 12px; color: #999;">(Dari Absensi)</span></label>
                         <input type="time" id="time_in" name="time_in" 
-                               value="{{ old('time_in', isset($timeIn) ? $timeIn : (isset($dailyAgenda) ? $dailyAgenda->time_in : '')) }}" 
+                               value="{{ old('time_in', $timeIn ?? '') }}"
                                readonly
                                style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; background: #f3f4f6; color: #666; cursor: not-allowed;">
                         <p style="margin: 6px 0 0 0; font-size: 12px; color: #999;">
@@ -146,16 +147,16 @@
                         @enderror
                     </div>
                     <div>
-                        <label for="time_out" style="display: block; margin-bottom: 8px; font-weight: 600;">Jam Pulang <span style="font-size: 12px; color: #999;">{{ isset($timeOut) && $timeOut ? '(Dari Absensi)' : '(Manual)' }}</span></label>
+                        <label for="time_out" style="display: block; margin-bottom: 8px; font-weight: 600;">Jam Pulang <span style="font-size: 12px; color: #999;">(Otomatis dari QR Checkout)</span></label>
                         <input type="time" id="time_out" name="time_out" 
-                               value="{{ old('time_out', isset($timeOut) ? $timeOut : (isset($dailyAgenda) ? $dailyAgenda->time_out : '')) }}" 
-                               placeholder="Masukkan jam pulang"
-                               {{ isset($timeOut) && $timeOut ? 'readonly style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; background: #f3f4f6; color: #666; cursor: not-allowed;"' : 'style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px;"' }}>
+                               value="{{ old('time_out', $timeOut ?? '') }}"
+                               readonly
+                               style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; background: #f3f4f6; color: #666; cursor: not-allowed;">
                         <p style="margin: 6px 0 0 0; font-size: 12px; color: #999;">
                             @if (isset($timeOut) && $timeOut)
                                 <i class="bi bi-check-circle-fill" style="color: #10b981;"></i> Diambil dari data absensi
                             @else
-                                <i class="bi bi-info-circle-fill"></i> Belum ada data absensi, input manual jam pulang
+                                <i class="bi bi-info-circle-fill"></i> Belum ada QR checkout, jam pulang akan terisi otomatis setelah scan keluar
                             @endif
                         </p>
                         @error('time_out')
@@ -173,7 +174,7 @@
                                 <label for="work_plan_{{ $i }}" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px;">Rencana {{ $i + 1 }}</label>
                                 <textarea id="work_plan_{{ $i }}" name="work_plan[]" rows="2" 
                                           placeholder="Masukkan rencana pekerjaan (opsional)" 
-                                          style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old("work_plan.$i", isset($dailyAgenda) && isset($dailyAgenda->work_plan[$i]) ? $dailyAgenda->work_plan[$i] : '') }}</textarea>
+                                          style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old("work_plan.$i", '') }}</textarea>
                                 @error("work_plan.$i")
                                     <span style="color: #dc2626; font-size: 12px;">{{ $message }}</span>
                                 @enderror
@@ -191,7 +192,7 @@
                                 <label for="work_realization_{{ $i }}" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px;">Realisasi {{ $i + 1 }}</label>
                                 <textarea id="work_realization_{{ $i }}" name="work_realization[]" rows="2" 
                                           placeholder="Masukkan realisasi pekerjaan (opsional)" 
-                                          style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old("work_realization.$i", isset($dailyAgenda) && isset($dailyAgenda->work_realization[$i]) ? $dailyAgenda->work_realization[$i] : '') }}</textarea>
+                                          style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old("work_realization.$i", '') }}</textarea>
                                 @error("work_realization.$i")
                                     <span style="color: #dc2626; font-size: 12px;">{{ $message }}</span>
                                 @enderror
@@ -205,7 +206,7 @@
                     <label for="special_assignment" style="display: block; margin-bottom: 8px; font-weight: 600;">Penugasan Khusus dari Atasan</label>
                     <textarea id="special_assignment" name="special_assignment" rows="3" 
                               placeholder="Masukkan penugasan khusus (opsional)" 
-                              style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old('special_assignment', isset($dailyAgenda) ? $dailyAgenda->special_assignment : '') }}</textarea>
+                              style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old('special_assignment', '') }}</textarea>
                     @error('special_assignment')
                         <span style="color: #dc2626; font-size: 12px;">{{ $message }}</span>
                     @enderror
@@ -216,7 +217,7 @@
                     <label for="problems_found" style="display: block; margin-bottom: 8px; font-weight: 600;">Penemuan Masalah di Lapangan</label>
                     <textarea id="problems_found" name="problems_found" rows="3" 
                               placeholder="Masukkan penemuan masalah di lapangan (opsional)" 
-                              style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old('problems_found', isset($dailyAgenda) ? $dailyAgenda->problems_found : '') }}</textarea>
+                              style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old('problems_found', '') }}</textarea>
                     @error('problems_found')
                         <span style="color: #dc2626; font-size: 12px;">{{ $message }}</span>
                     @enderror
@@ -250,14 +251,14 @@
                                 <div style="display: flex; gap: 20px;">
                                     <label style="display: flex; align-items: center; gap: 8px; {{ !$isPembimbing ? 'cursor: not-allowed; opacity: 0.6;' : 'cursor: pointer;' }}">
                                         <input type="radio" name="assessment_items[{{ $index }}]" value="Baik"
-                                               {{ old("assessment_items.$index", isset($dailyAgenda) && isset($dailyAgenda->daily_assessment[$index]) ? $dailyAgenda->daily_assessment[$index]['value'] : '') === 'Baik' ? 'checked' : '' }}
+                                               {{ old("assessment_items.$index") === 'Baik' ? 'checked' : '' }}
                                                {{ !$isPembimbing ? 'disabled' : '' }}
                                                style="width: 18px; height: 18px; {{ !$isPembimbing ? 'cursor: not-allowed;' : 'cursor: pointer;' }}">
                                         <span style="{{ !$isPembimbing ? 'cursor: not-allowed;' : 'cursor: pointer;' }} font-size: 13px;">Baik</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 8px; {{ !$isPembimbing ? 'cursor: not-allowed; opacity: 0.6;' : 'cursor: pointer;' }}">
                                         <input type="radio" name="assessment_items[{{ $index }}]" value="Kurang"
-                                               {{ old("assessment_items.$index", isset($dailyAgenda) && isset($dailyAgenda->daily_assessment[$index]) ? $dailyAgenda->daily_assessment[$index]['value'] : '') === 'Kurang' ? 'checked' : '' }}
+                                               {{ old("assessment_items.$index") === 'Kurang' ? 'checked' : '' }}
                                                {{ !$isPembimbing ? 'disabled' : '' }}
                                                style="width: 18px; height: 18px; {{ !$isPembimbing ? 'cursor: not-allowed;' : 'cursor: pointer;' }}">
                                         <span style="{{ !$isPembimbing ? 'cursor: not-allowed;' : 'cursor: pointer;' }} font-size: 13px;">Kurang</span>
@@ -276,7 +277,7 @@
                     <label for="notes" style="display: block; margin-bottom: 8px; font-weight: 600;">Catatan untuk Diingat</label>
                     <textarea id="notes" name="notes" rows="3" 
                               placeholder="Masukkan catatan (opsional)" 
-                              style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old('notes', isset($dailyAgenda) ? $dailyAgenda->notes : '') }}</textarea>
+                              style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 13px;">{{ old('notes', '') }}</textarea>
                     @error('notes')
                         <span style="color: #dc2626; font-size: 12px;">{{ $message }}</span>
                     @enderror
@@ -292,7 +293,7 @@
                     <button type="submit" style="padding: 10px 20px; background: #f97316; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;"
                             onmouseover="this.style.background='#ea580c'"
                             onmouseout="this.style.background='#f97316'">
-                        <i class="bi bi-check-circle"></i> {{ isset($dailyAgenda) ? 'Update' : 'Simpan' }}
+                        <i class="bi bi-check-circle"></i> Simpan
                     </button>
                 </div>
             </form>

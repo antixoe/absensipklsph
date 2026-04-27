@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Models\Student;
 use Illuminate\Support\Facades\Hash;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -79,7 +80,7 @@ class UsersImport
                 }
 
                 // Create user
-                User::create([
+                $user = User::create([
                     'name' => $fullName,
                     'email' => $email,
                     'password' => Hash::make($password),
@@ -88,6 +89,27 @@ class UsersImport
                     'role_id' => $role->id,
                     'status' => $rowData['status'] ?? 'active',
                 ]);
+
+                // If this imported user is a student, make sure the student profile exists too.
+                if ($role->name === Role::STUDENT) {
+                    $nim = trim((string) ($rowData['nim'] ?? ''));
+                    Student::updateOrCreate(
+                        ['user_id' => $user->id],
+                        [
+                            'internship_program_id' => isset($rowData['internship_program_id']) && is_numeric($rowData['internship_program_id'])
+                                ? (int) $rowData['internship_program_id']
+                                : null,
+                            'nim' => $nim !== '' ? $nim : 'AUTO-' . $user->id,
+                            'school' => $rowData['school'] ?? null,
+                            'major' => $rowData['major'] ?? null,
+                            'phone' => $rowData['student_phone'] ?? $rowData['phone'] ?? null,
+                            'company_placement' => $rowData['company_placement'] ?? null,
+                            'start_date' => $rowData['start_date'] ?? null,
+                            'end_date' => $rowData['end_date'] ?? null,
+                            'status' => $rowData['student_status'] ?? 'active',
+                        ]
+                    );
+                }
 
                 $createdCount++;
             } catch (\Exception $e) {

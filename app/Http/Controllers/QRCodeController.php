@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\QRCode;
 use App\Models\Absence;
 use App\Models\Student;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -144,29 +145,34 @@ class QRCodeController extends Controller
     public function scanner()
     {
         $currentUser = Auth::user();
-        
+
+        if (!$currentUser->hasRole(Role::STUDENT)) {
+            return redirect()->route('dashboard')->with('error', 'You must be registered as a student to scan QR codes.');
+        }
+
         // Check if current user is a student
         $student = Student::where('user_id', $currentUser->id)->first();
-        
+
         if (!$student) {
             return redirect()->route('dashboard')->with('error', 'You must be registered as a student to scan QR codes.');
         }
 
         // Get available QR codes for today
-        $todayQRCodes = QRCode::where('qr_date', Carbon::today())
+        $todayQRCodes = QRCode::whereDate('qr_date', Carbon::today())
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
             ->first();
 
-        $alreadyScanned = null;
+        $todayAbsence = null;
         if ($todayQRCodes) {
-            $alreadyScanned = Absence::where('student_id', $student->id)
+            $todayAbsence = Absence::where('student_id', $student->id)
                 ->whereDate('absence_date', Carbon::today())
                 ->where('qr_code_id', $todayQRCodes->id)
+                ->latest('scanned_qr_at')
                 ->first();
         }
 
-        return view('qrcode.scanner', compact('student', 'todayQRCodes', 'alreadyScanned'));
+        return view('qrcode.scanner', compact('student', 'todayQRCodes', 'todayAbsence'));
     }
 
     /**
@@ -183,6 +189,14 @@ class QRCodeController extends Controller
         ]);
 
         $currentUser = Auth::user();
+
+        if (!$currentUser->hasRole(Role::STUDENT)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You must be registered as a student to scan QR codes.'
+            ], 403);
+        }
+
         $student = Student::where('user_id', $currentUser->id)->first();
 
         if (!$student) {
@@ -226,9 +240,26 @@ class QRCodeController extends Controller
                 ->first();
 
             if ($existingAbsence) {
+                if (!$existingAbsence->scanned_qr_out_at) {
+                    $existingAbsence->update([
+                        'scanned_qr_out_at' => Carbon::now(),
+                    ]);
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Checkout marked successfully with QR, selfie, and location!',
+                        'data' => [
+                            'student_name' => $currentUser->name,
+                            'time' => $existingAbsence->scanned_qr_out_at->format('H:i:s'),
+                            'date' => $existingAbsence->scanned_qr_out_at->format('M d, Y'),
+                            'action' => 'checkout',
+                        ]
+                    ]);
+                }
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'You have already scanned this QR code today at ' . $existingAbsence->scanned_qr_at->format('H:i:s')
+                    'message' => 'You have already checked out today at ' . $existingAbsence->scanned_qr_out_at->format('H:i:s')
                 ], 400);
             }
 
@@ -264,11 +295,12 @@ class QRCodeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Attendance marked successfully with QR, selfie, and location!',
+                'message' => 'Check-in marked successfully with QR, selfie, and location!',
                 'data' => [
                     'student_name' => $currentUser->name,
                     'time' => $absence->scanned_qr_at->format('H:i:s'),
                     'date' => $absence->scanned_qr_at->format('M d, Y'),
+                    'action' => 'checkin',
                 ]
             ]);
         } catch (\Exception $e) {

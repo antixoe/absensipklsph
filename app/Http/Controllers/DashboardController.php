@@ -78,6 +78,10 @@ class DashboardController extends Controller
 
     public function attendance()
     {
+        if (!Auth::user()->hasRole('student')) {
+            return redirect()->route('dashboard')->with('error', 'Only students can access attendance.');
+        }
+
         return view('dashboard.attendance');
     }
 

@@ -1,6 +1,16 @@
 <template>
   <div class="py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div v-if="isAuthLoading" class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-white rounded-lg shadow p-8 border-l-4 border-orange-500">
+        <div class="text-sm font-semibold uppercase tracking-wide text-orange-600">Loading</div>
+        <h1 class="text-3xl font-bold text-gray-900 mt-2">Attendance</h1>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          Checking your access and loading attendance data...
+        </p>
+      </div>
+    </div>
+
+    <div v-else-if="isStudent" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="mb-8 flex justify-between items-center">
         <h1 class="text-4xl font-bold text-gray-900">Attendance</h1>
         <button
@@ -122,11 +132,21 @@
         </div>
       </div>
     </div>
+
+    <div v-else class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-white rounded-lg shadow p-8 border-l-4 border-orange-500">
+        <div class="text-sm font-semibold uppercase tracking-wide text-orange-600">Access Restricted</div>
+        <h1 class="text-3xl font-bold text-gray-900 mt-2">Attendance</h1>
+        <p class="text-gray-600 mt-4 leading-relaxed">
+          Only students can access attendance check-in, check-out, and attendance reports.
+        </p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useAttendanceStore } from '../stores/attendance';
 
@@ -140,6 +160,8 @@ const searchMonth = ref(new Date().toISOString().slice(0, 7));
 const locationCaptures = ref(0);
 const currentLocation = ref(null);
 const currentPhoto = ref(null);
+const isAuthLoading = computed(() => !!authStore.token && !authStore.user);
+const isStudent = computed(() => authStore.user?.role?.name === 'student');
 const attendanceReport = ref({
   total_days: 0,
   present: 0,
@@ -203,6 +225,10 @@ const submitCheckIn = async () => {
 };
 
 const loadAttendances = async () => {
+  if (!isStudent.value) {
+    return;
+  }
+
   try {
     const month = searchMonth.value.split('-')[1];
     const res = await attendanceStore.fetchAttendances({ month });
@@ -219,10 +245,14 @@ const loadAttendances = async () => {
 };
 
 watch(searchMonth, () => {
-  loadAttendances();
+  if (isStudent.value) {
+    loadAttendances();
+  }
 });
 
-onMounted(() => {
-  loadAttendances();
-});
+watch(isStudent, (value) => {
+  if (value) {
+    loadAttendances();
+  }
+}, { immediate: true });
 </script>

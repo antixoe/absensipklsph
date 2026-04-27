@@ -21,10 +21,18 @@ class DailyAgenda extends Model
         'problems_found',
         'daily_assessment',
         'notes',
-        'student_signature_path',
-        'company_mentor_signature_path',
-        'school_teacher_signature_path',
         'submitted_at',
+        'is_completed',
+        'completed_by',
+        'completed_at',
+        'instructor_notes',
+        'completion_status',
+        'student_approved',
+        'student_approved_at',
+        'company_mentor_approved',
+        'company_mentor_approved_at',
+        'school_teacher_approved',
+        'school_teacher_approved_at',
     ];
 
     protected $casts = [
@@ -33,6 +41,14 @@ class DailyAgenda extends Model
         'daily_assessment' => 'array',
         'agenda_date' => 'date',
         'submitted_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'is_completed' => 'boolean',
+        'student_approved' => 'boolean',
+        'student_approved_at' => 'datetime',
+        'company_mentor_approved' => 'boolean',
+        'company_mentor_approved_at' => 'datetime',
+        'school_teacher_approved' => 'boolean',
+        'school_teacher_approved_at' => 'datetime',
     ];
 
     /**
@@ -41,6 +57,14 @@ class DailyAgenda extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    /**
+     * Get the instructor who marked this agenda as completed.
+     */
+    public function completedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'completed_by');
     }
 }
 

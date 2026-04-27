@@ -166,6 +166,7 @@
             <li><strong>Role Names:</strong> Use exact role names (e.g., "student", "instructor", "admin")</li>
             <li><strong>Headers Required:</strong> The first row must contain column headers</li>
             <li><strong>Default Password:</strong> Users created without a password will use "password" as default</li>
+            <li><strong>Student Profiles:</strong> If `role` is `student`, optional `nim`, `school`, `major`, `student_phone`, and `student_status` columns will be saved to the student profile</li>
             <li><strong>Validation:</strong> Email addresses are validated during import</li>
             <li><strong>Status Default:</strong> If not specified, status defaults to "active"</li>
         </ul>

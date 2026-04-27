@@ -7,17 +7,50 @@
     </div>
 
     <div style="max-width: 1000px; margin: 0 auto;">
+        @php
+            $agendaModalData = [
+                'student_name' => $dailyAgenda->student?->user?->name ?? 'N/A',
+                'nim' => $dailyAgenda->student?->nim ?? '-',
+                'agenda_date' => $dailyAgenda->agenda_date?->format('d/m/Y') ?? '-',
+                'day_name' => $dailyAgenda->agenda_date?->format('l') ?? '-',
+                'time_in' => $dailyAgenda->time_in ?? '-',
+                'time_out' => $dailyAgenda->time_out ?? '-',
+                'submitted_at' => $dailyAgenda->submitted_at?->format('d/m/Y H:i') ?? '',
+                'completion_status' => $dailyAgenda->completion_status ?? 'pending',
+                'completion_label' => $dailyAgenda->completion_status === 'approved' ? 'Disetujui' : ($dailyAgenda->completion_status === 'rejected' ? 'Ditolak' : 'Pending'),
+                'completed_by' => $dailyAgenda->completedBy?->name ?? '',
+                'completed_at' => $dailyAgenda->completed_at?->format('d/m/Y H:i') ?? '',
+                'instructor_notes' => $dailyAgenda->instructor_notes ?? '',
+                'work_plan' => $dailyAgenda->work_plan ?? [],
+                'work_realization' => $dailyAgenda->work_realization ?? [],
+                'special_assignment' => $dailyAgenda->special_assignment ?? '',
+                'problems_found' => $dailyAgenda->problems_found ?? '',
+                'daily_assessment' => $dailyAgenda->daily_assessment ?? [],
+                'notes' => $dailyAgenda->notes ?? '',
+                'student_approved' => (bool) $dailyAgenda->student_approved,
+                'student_approved_at' => $dailyAgenda->student_approved_at?->format('d/m/Y H:i') ?? '',
+                'company_mentor_approved' => (bool) $dailyAgenda->company_mentor_approved,
+                'company_mentor_approved_at' => $dailyAgenda->company_mentor_approved_at?->format('d/m/Y H:i') ?? '',
+                'school_teacher_approved' => (bool) $dailyAgenda->school_teacher_approved,
+                'school_teacher_approved_at' => $dailyAgenda->school_teacher_approved_at?->format('d/m/Y H:i') ?? '',
+                'update_url' => route('daily-agenda.update', $dailyAgenda->id),
+            ];
+        @endphp
         <!-- Header Card -->
         <div class="card" style="margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Informasi Agenda</h2>
                 <div style="display: flex; gap: 10px;">
-                    <a href="{{ route('daily-agenda.edit', $dailyAgenda->id) }}" 
-                       style="padding: 10px 15px; background: #f97316; color: white; border: none; border-radius: 6px; text-decoration: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;"
-                       onmouseover="this.style.background='#ea580c'"
-                       onmouseout="this.style.background='#f97316'">
-                        <i class="bi bi-pencil"></i> Edit
-                    </a>
+                    @if ($currentUser && in_array($currentUser->role?->name, ['industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']))
+                        <button type="button"
+                           onclick="openAgendaEditModal(this)"
+                           data-agenda='@json($agendaModalData)'
+                           style="padding: 10px 15px; background: #0284c7; color: white; border: none; border-radius: 6px; text-decoration: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;"
+                           onmouseover="this.style.background='#0369a1'"
+                           onmouseout="this.style.background='#0284c7'">
+                            <i class="bi bi-pencil-square"></i> Edit Status
+                        </button>
+                    @endif
                     <a href="{{ route('daily-agenda.index') }}" 
                        style="padding: 10px 15px; background: #6b7280; color: white; border: none; border-radius: 6px; text-decoration: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;"
                        onmouseover="this.style.background='#4b5563'"
@@ -150,101 +183,142 @@
             </div>
         </div>
 
-        <!-- Tanda Tangan Section -->
-        <div class="card" style="margin-bottom: 20px; border-left: 4px solid #6b7280;">
+        <!-- Approval Status Section -->
+        <div class="card" style="margin-bottom: 20px; border-left: 4px solid #0284c7;">
             <h3 style="margin: 0 0 20px 0; font-size: 16px; font-weight: 600;">
-                <i class="bi bi-pen-fill" style="margin-right: 8px; color: #6b7280;"></i>Tanda Tangan
+                <i class="bi bi-check2-all" style="margin-right: 8px; color: #0284c7;"></i>Status Persetujuan Agenda
             </h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                <!-- Tanda Tangan Murid -->
-                <div style="text-align: center;">
-                    <div style="position: relative; margin-bottom: 15px;">
-                        <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; min-height: 180px; display: flex; align-items: center; justify-content: center; cursor: pointer;" 
-                             onclick="showSignatureModal('{{ isset($dailyAgenda->student_signature_path) ? asset('storage/' . $dailyAgenda->student_signature_path) : '' }}', 'Murid')">
-                                @if ($dailyAgenda->student_signature_path)
-                                    <img src="{{ asset('storage/' . $dailyAgenda->student_signature_path) }}" 
-                                         alt="Tanda Tangan Murid" 
-                                         style="max-width: 100%; max-height: 120px; object-fit: contain;">
-                                @else
-                                    <div style="text-align: center;">
-                                        <i class="bi bi-image" style="font-size: 48px; color: #d1d5db; display: block; margin-bottom: 8px;"></i>
-                                        <p style="color: #999; margin: 0; font-size: 13px;">Belum ada tanda tangan</p>
-                                    </div>
-                                @endif
+                
+                <!-- Student Approval -->
+                <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="font-size: 24px; color: {{ $dailyAgenda->student_approved ? '#10b981' : '#d1d5db' }};">
+                            <i class="bi bi-{{ $dailyAgenda->student_approved ? 'check-circle-fill' : 'circle' }}"></i>
                         </div>
-                        @if ($dailyAgenda->student_signature_path)
-                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
-                                <i class="bi bi-check-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
-                            </div>
+                        <div>
+                            <p style="margin: 0; font-size: 14px; font-weight: 600; color: #333;">Murid</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">{{ $dailyAgenda->student?->user?->name ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+                    
+                    @if ($dailyAgenda->student_approved)
+                        <div style="background: #f0fdf4; border: 1px solid #10b981; border-radius: 6px; padding: 12px;">
+                            <p style="margin: 0; font-size: 13px; color: #166534;">
+                                <i class="bi bi-check" style="margin-right: 4px;"></i>
+                                Disetujui pada {{ $dailyAgenda->student_approved_at?->format('d/m/Y H:i') ?? 'N/A' }}
+                            </p>
+                        </div>
+                    @else
+                        @php
+                            $isStudent = Auth::user()->student && Auth::user()->student->id === $dailyAgenda->student_id;
+                        @endphp
+                        @if ($isStudent)
+                            <form method="POST" action="{{ route('daily-agenda.approve-student', $dailyAgenda->id) }}">
+                                @csrf
+                                <button type="submit" style="width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#059669'"
+                                        onmouseout="this.style.background='#10b981'">
+                                    <i class="bi bi-check-circle"></i> Setujui Agenda
+                                </button>
+                            </form>
                         @else
-                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
-                                <i class="bi bi-x-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
+                            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px;">
+                                <p style="margin: 0; font-size: 13px; color: #92400e;">
+                                    <i class="bi bi-info-circle" style="margin-right: 4px;"></i>
+                                    Menunggu persetujuan siswa...
+                                </p>
                             </div>
                         @endif
-                    </div>
-                    <h5 style="margin: 0 0 5px 0; font-weight: 600; font-size: 14px;">Murid</h5>
-                    <p style="margin: 0; color: #999; font-size: 13px;">{{ $dailyAgenda->student?->user?->name ?? 'N/A' }}</p>
+                    @endif
                 </div>
 
-                <!-- Tanda Tangan Instruktur (Perusahaan) -->
-                <div style="text-align: center;">
-                    <div style="position: relative; margin-bottom: 15px;">
-                        <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; min-height: 180px; display: flex; align-items: center; justify-content: center; cursor: pointer;" 
-                             onclick="showSignatureModal('{{ isset($dailyAgenda->company_mentor_signature_path) ? asset('storage/' . $dailyAgenda->company_mentor_signature_path) : '' }}', 'Instruktur')">
-                                @if ($dailyAgenda->company_mentor_signature_path)
-                                    <img src="{{ asset('storage/' . $dailyAgenda->company_mentor_signature_path) }}" 
-                                         alt="Tanda Tangan Instruktur" 
-                                         style="max-width: 100%; max-height: 120px; object-fit: contain;">
-                                @else
-                                    <div style="text-align: center;">
-                                        <i class="bi bi-image" style="font-size: 48px; color: #d1d5db; display: block; margin-bottom: 8px;"></i>
-                                        <p style="color: #999; margin: 0; font-size: 13px;">Belum ada tanda tangan</p>
-                                    </div>
-                                @endif
+                <!-- Company Mentor Approval -->
+                <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="font-size: 24px; color: {{ $dailyAgenda->company_mentor_approved ? '#10b981' : '#d1d5db' }};">
+                            <i class="bi bi-{{ $dailyAgenda->company_mentor_approved ? 'check-circle-fill' : 'circle' }}"></i>
                         </div>
-                        @if ($dailyAgenda->company_mentor_signature_path)
-                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
-                                <i class="bi bi-check-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
-                            </div>
+                        <div>
+                            <p style="margin: 0; font-size: 14px; font-weight: 600; color: #333;">Instruktur (Perusahaan)</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">Pembimbing Perusahaan</p>
+                        </div>
+                    </div>
+                    
+                    @if ($dailyAgenda->company_mentor_approved)
+                        <div style="background: #f0fdf4; border: 1px solid #10b981; border-radius: 6px; padding: 12px;">
+                            <p style="margin: 0; font-size: 13px; color: #166534;">
+                                <i class="bi bi-check" style="margin-right: 4px;"></i>
+                                Disetujui pada {{ $dailyAgenda->company_mentor_approved_at?->format('d/m/Y H:i') ?? 'N/A' }}
+                            </p>
+                        </div>
+                    @else
+                        @php
+                            $isInstructor = in_array(Auth::user()->role?->name, ['industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']);
+                        @endphp
+                        @if ($isInstructor)
+                            <form method="POST" action="{{ route('daily-agenda.approve-company-mentor', $dailyAgenda->id) }}">
+                                @csrf
+                                <button type="submit" style="width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#059669'"
+                                        onmouseout="this.style.background='#10b981'">
+                                    <i class="bi bi-check-circle"></i> Setujui Agenda
+                                </button>
+                            </form>
                         @else
-                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
-                                <i class="bi bi-x-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
+                            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px;">
+                                <p style="margin: 0; font-size: 13px; color: #92400e;">
+                                    <i class="bi bi-info-circle" style="margin-right: 4px;"></i>
+                                    Menunggu persetujuan pembimbing...
+                                </p>
                             </div>
                         @endif
-                    </div>
-                    <h5 style="margin: 0 0 5px 0; font-weight: 600; font-size: 14px;">Instruktur (Perusahaan)</h5>
-                    <p style="margin: 0; color: #999; font-size: 13px;">Pembimbing Perusahaan</p>
+                    @endif
                 </div>
 
-                <!-- Tanda Tangan Guru Pembimbing (Sekolah) -->
-                <div style="text-align: center;">
-                    <div style="position: relative; margin-bottom: 15px;">
-                        <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; min-height: 180px; display: flex; align-items: center; justify-content: center; cursor: pointer;" 
-                             onclick="showSignatureModal('{{ isset($dailyAgenda->school_teacher_signature_path) ? asset('storage/' . $dailyAgenda->school_teacher_signature_path) : '' }}', 'Guru Pembimbing')">
-                                @if ($dailyAgenda->school_teacher_signature_path)
-                                    <img src="{{ asset('storage/' . $dailyAgenda->school_teacher_signature_path) }}" 
-                                         alt="Tanda Tangan Guru Pembimbing" 
-                                         style="max-width: 100%; max-height: 120px; object-fit: contain;">
-                                @else
-                                    <div style="text-align: center;">
-                                        <i class="bi bi-image" style="font-size: 48px; color: #d1d5db; display: block; margin-bottom: 8px;"></i>
-                                        <p style="color: #999; margin: 0; font-size: 13px;">Belum ada tanda tangan</p>
-                                    </div>
-                                @endif
+                <!-- School Teacher Approval -->
+                <div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="font-size: 24px; color: {{ $dailyAgenda->school_teacher_approved ? '#10b981' : '#d1d5db' }};">
+                            <i class="bi bi-{{ $dailyAgenda->school_teacher_approved ? 'check-circle-fill' : 'circle' }}"></i>
                         </div>
-                        @if ($dailyAgenda->school_teacher_signature_path)
-                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
-                                <i class="bi bi-check-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
-                            </div>
+                        <div>
+                            <p style="margin: 0; font-size: 14px; font-weight: 600; color: #333;">Guru Pembimbing (Sekolah)</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">Pembimbing Sekolah</p>
+                        </div>
+                    </div>
+                    
+                    @if ($dailyAgenda->school_teacher_approved)
+                        <div style="background: #f0fdf4; border: 1px solid #10b981; border-radius: 6px; padding: 12px;">
+                            <p style="margin: 0; font-size: 13px; color: #166534;">
+                                <i class="bi bi-check" style="margin-right: 4px;"></i>
+                                Disetujui pada {{ $dailyAgenda->school_teacher_approved_at?->format('d/m/Y H:i') ?? 'N/A' }}
+                            </p>
+                        </div>
+                    @else
+                        @php
+                            $isInstructor = in_array(Auth::user()->role?->name, ['industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']);
+                        @endphp
+                        @if ($isInstructor)
+                            <form method="POST" action="{{ route('daily-agenda.approve-school-teacher', $dailyAgenda->id) }}">
+                                @csrf
+                                <button type="submit" style="width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s;"
+                                        onmouseover="this.style.background='#059669'"
+                                        onmouseout="this.style.background='#10b981'">
+                                    <i class="bi bi-check-circle"></i> Setujui Agenda
+                                </button>
+                            </form>
                         @else
-                            <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);">
-                                <i class="bi bi-x-lg" style="color: white; font-size: 24px; font-weight: bold;"></i>
+                            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px;">
+                                <p style="margin: 0; font-size: 13px; color: #92400e;">
+                                    <i class="bi bi-info-circle" style="margin-right: 4px;"></i>
+                                    Menunggu persetujuan guru...
+                                </p>
                             </div>
                         @endif
-                    </div>
-                    <h5 style="margin: 0 0 5px 0; font-weight: 600; font-size: 14px;">Guru Pembimbing (Sekolah)</h5>
-                    <p style="margin: 0; color: #999; font-size: 13px;">Pembimbing Sekolah</p>
+                    @endif
                 </div>
+
             </div>
         </div>
 
@@ -268,62 +342,111 @@
                     onmouseout="this.style.background='#f97316'">
                 <i class="bi bi-printer"></i> Cetak
             </button>
-    </div>
 
-    <!-- Signature Modal -->
-    <div id="signatureModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 9999; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); max-width: 600px; width: 90%; overflow: hidden;">
-            <div style="padding: 20px; background: #f97316; color: white; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; font-size: 18px; font-weight: 600;">
-                    <i class="bi bi-pen-fill" style="margin-right: 8px;"></i>Tanda Tangan - <span id="signatureTitle"></span>
+        <!-- Completion Status & Approval Section for Instructors/Admins -->
+        @if ($currentUser && in_array($currentUser->role?->name, ['industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']))
+            <div class="card" style="margin-top: 30px; border-left: 4px solid {{ $dailyAgenda->is_completed && $dailyAgenda->completion_status === 'approved' ? '#10b981' : ($dailyAgenda->is_completed && $dailyAgenda->completion_status === 'rejected' ? '#dc2626' : '#f59e0b') }};">
+                <h3 style="margin: 0 0 20px 0; font-size: 16px; font-weight: 600;">
+                    <i class="bi bi-{{ $dailyAgenda->is_completed ? 'check-circle' : 'hourglass-split' }}" style="margin-right: 8px; color: {{ $dailyAgenda->is_completed && $dailyAgenda->completion_status === 'approved' ? '#10b981' : ($dailyAgenda->is_completed && $dailyAgenda->completion_status === 'rejected' ? '#dc2626' : '#f59e0b') }};"></i>Status Verifikasi PKL
                 </h3>
-                <button onclick="closeSignatureModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
-                    ×
-                </button>
+
+                <!-- Current Status Display -->
+                @if ($dailyAgenda->is_completed)
+                    <div style="background: {{ $dailyAgenda->completion_status === 'approved' ? '#f0fdf4' : '#fee2e2' }}; border: 2px solid {{ $dailyAgenda->completion_status === 'approved' ? '#10b981' : '#dc2626' }}; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div style="font-size: 24px; color: {{ $dailyAgenda->completion_status === 'approved' ? '#10b981' : '#dc2626' }};">
+                                <i class="bi bi-{{ $dailyAgenda->completion_status === 'approved' ? 'check-circle-fill' : 'x-circle-fill' }}"></i>
+                            </div>
+                            <div>
+                                <p style="margin: 0; font-size: 14px; font-weight: 600; color: {{ $dailyAgenda->completion_status === 'approved' ? '#166534' : '#7f1d1d' }};">
+                                    {{ $dailyAgenda->completion_status === 'approved' ? 'Disetujui sebagai Bukti PKL' : 'Ditolak - Perlu Revisi' }}
+                                </p>
+                                <p style="margin: 4px 0 0 0; font-size: 13px; color: {{ $dailyAgenda->completion_status === 'approved' ? '#166534' : '#7f1d1d' }};">
+                                    Oleh: <strong>{{ $dailyAgenda->completedBy?->name ?? 'N/A' }}</strong> 
+                                    pada {{ $dailyAgenda->completed_at?->format('d/m/Y H:i') ?? 'N/A' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        @if ($dailyAgenda->instructor_notes)
+                            <div style="background: white; border-radius: 6px; padding: 12px; margin-top: 12px; border-left: 4px solid {{ $dailyAgenda->completion_status === 'approved' ? '#10b981' : '#dc2626' }};">
+                                <p style="margin: 0; font-size: 13px; font-weight: 600; color: #666; text-transform: uppercase;">Catatan dari Verifikator</p>
+                                <p style="margin: 8px 0 0 0; font-size: 14px; color: #333; line-height: 1.6;">{{ $dailyAgenda->instructor_notes }}</p>
+                            </div>
+                        @endif
+
+                        <!-- Unmark Button -->
+                        <form method="POST" action="{{ route('daily-agenda.unmark-complete', $dailyAgenda->id) }}" style="margin-top: 15px;">
+                            @csrf
+                            <button type="submit" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;"
+                                    onmouseover="this.style.background='#4b5563'"
+                                    onmouseout="this.style.background='#6b7280'"
+                                    onclick="return confirm('Apakah Anda yakin ingin mengembalikan status menjadi pending?')">
+                                <i class="bi bi-arrow-counterclockwise"></i> Batalkan Verifikasi
+                            </button>
+                        </form>
+                    </div>
+                @else
+                    <!-- Mark as Complete Form -->
+                    <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px;">
+                        <p style="margin: 0 0 15px 0; font-size: 14px; color: #92400e;">
+                            <i class="bi bi-info-circle" style="margin-right: 6px;"></i>Agenda ini belum diverifikasi. Pilih status verifikasi di bawah ini.
+                        </p>
+
+                        <form method="POST" action="{{ route('daily-agenda.mark-complete', $dailyAgenda->id) }}" style="display: grid; gap: 15px;">
+                            @csrf
+
+                            <!-- Status Selection -->
+                            <div>
+                                <label for="completion_status" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #333;">Pilih Status Verifikasi</label>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 6px; cursor: pointer; transition: all 0.2s;"
+                                           onmouseover="this.style.borderColor='#10b981'; this.style.background='#f0fdf4'"
+                                           onmouseout="this.style.borderColor='#e5e7eb'; this.style.background='white'">
+                                        <input type="radio" name="completion_status" value="approved" required style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer;">
+                                        <div>
+                                            <p style="margin: 0; font-weight: 600; font-size: 14px; color: #10b981;">
+                                                <i class="bi bi-check-circle"></i> Setujui
+                                            </p>
+                                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">Agenda valid sebagai bukti PKL</p>
+                                        </div>
+                                    </label>
+                                    <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 6px; cursor: pointer; transition: all 0.2s;"
+                                           onmouseover="this.style.borderColor='#dc2626'; this.style.background='#fee2e2'"
+                                           onmouseout="this.style.borderColor='#e5e7eb'; this.style.background='white'">
+                                        <input type="radio" name="completion_status" value="rejected" required style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer;">
+                                        <div>
+                                            <p style="margin: 0; font-weight: 600; font-size: 14px; color: #dc2626;">
+                                                <i class="bi bi-x-circle"></i> Tolak
+                                            </p>
+                                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">Perlu revisi/perbaikan</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Instructor Notes -->
+                            <div>
+                                <label for="instructor_notes" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #333;">Catatan (Opsional)</label>
+                                <textarea name="instructor_notes" id="instructor_notes" 
+                                          placeholder="Masukkan catatan untuk siswa (misalnya: perbaikan yang diperlukan, poin bagus, dll.)"
+                                          style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; font-family: inherit; min-height: 100px; resize: vertical;"
+                                          maxlength="1000"></textarea>
+                                <p style="margin: 6px 0 0 0; font-size: 12px; color: #999;">Max 1000 karakter</p>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" style="padding: 12px 24px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s;"
+                                    onmouseover="this.style.background='#059669'"
+                                    onmouseout="this.style.background='#10b981'">
+                                <i class="bi bi-check2-square"></i> Simpan Verifikasi
+                            </button>
+                        </form>
+                    </div>
+                @endif
             </div>
-            <div style="padding: 30px; text-align: center; background: #f9fafb;">
-                <img id="signatureImage" src="" alt="Signature" style="max-width: 100%; max-height: 400px; object-fit: contain;">
-            </div>
-            <div style="padding: 15px; background: white; text-align: right; border-top: 1px solid #e5e7eb;">
-                <button onclick="closeSignatureModal()" style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;"
-                        onmouseover="this.style.background='#4b5563'"
-                        onmouseout="this.style.background='#6b7280'">
-                    Tutup
-                </button>
-            </div>
-        </div>
+        @endif
     </div>
-
-    <script>
-        function showSignatureModal(imageUrl, personType) {
-            if (!imageUrl) return;
-            document.getElementById('signatureImage').src = imageUrl;
-            document.getElementById('signatureTitle').textContent = personType;
-            document.getElementById('signatureModal').style.display = 'flex';
-        }
-
-        function closeSignatureModal() {
-            document.getElementById('signatureModal').style.display = 'none';
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('signatureModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeSignatureModal();
-            }
-        });
-
-        // Close modal on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeSignatureModal();
-            }
-        });
-
-        @media print {
-            button, a[style*="background"] { display: none !important; }
-        }
-    </script>
 
     <style>
         @media print {
@@ -331,5 +454,6 @@
             .page-header { display: none !important; }
         }
     </style>
+    @include('daily-agenda.partials.agenda-modal')
 @endsection
 
