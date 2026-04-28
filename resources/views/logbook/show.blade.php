@@ -4,7 +4,7 @@
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-journal-text" style="margin-right: 8px;"></i>{{ $entry->title }}</h1>
-        <p>{{ $entry->entry_date->format('F d, Y') }} • {{ $entry->hours_worked }} hours • {{ ucfirst($entry->status) }}</p>
+        <p>{{ optional($entry->entry_date)->format('F d, Y') ?? 'N/A' }} • {{ $entry->hours_worked }} hours • {{ ucfirst($entry->status) }}</p>
     </div>
 
     <div class="card" style="max-width: 800px; margin: 0 auto;">

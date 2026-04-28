@@ -3,7 +3,7 @@
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-file-text" style="margin-right: 8px;"></i>{{ $document->document_name }}</h1>
-        <p>{{ $document->document_type ? ucfirst($document->document_type) : 'General Document' }} • Uploaded {{ $document->created_at->format('F d, Y') }}</p>
+        <p>{{ $document->document_type ? ucfirst($document->document_type) : 'General Document' }} • Uploaded {{ optional($document->created_at)->format('F d, Y') ?? 'N/A' }}</p>
     </div>
 
     <div class="card" style="max-width: 600px; margin: 0 auto;">
@@ -25,7 +25,7 @@
             <p style="color: #666; font-size: 14px; margin-bottom: 8px;">File Information</p>
             <p><strong>Name:</strong> {{ $document->file_name }}</p>
             <p style="margin-top: 8px;"><strong>Type:</strong> {{ $document->mime_type ?? 'Unknown' }}</p>
-            <p style="margin-top: 8px;"><strong>Uploaded:</strong> {{ $document->created_at->format('F d, Y \a\t g:i A') }}</p>
+            <p style="margin-top: 8px;"><strong>Uploaded:</strong> {{ optional($document->created_at)->format('F d, Y \a\t g:i A') ?? 'N/A' }}</p>
         </div>
 
         @if ($document->description)

@@ -513,15 +513,37 @@
         </div>
     @endif
 
-    @if($todayAbsence)
+    @if($isCheckoutPage && $todayAbsence && $todayAbsence->scanned_qr_out_at)
         <div style="padding: 15px 20px; background: #dcfce7; border: 2px solid #10b981; border-radius: 8px; margin-bottom: 20px; color: #166534;">
             <i class="bi bi-check-circle-fill" style="margin-right: 8px;"></i>
-            <strong>{{ $isCheckoutPage ? 'Checkout already recorded today' : 'You have already marked your attendance today' }}</strong>
+            <strong>Checkout already recorded today</strong>
             <p style="margin: 8px 0 0 0; font-size: 14px;">
-                {{ $isCheckoutPage ? 'Checked out at: ' : 'Scanned at: ' }}{{ $todayAbsence->scanned_qr_at->format('H:i:s') }}
+                Checked out at: {{ optional($todayAbsence->scanned_qr_out_at)->format('H:i:s') ?? 'N/A' }}
             </p>
             <p style="margin: 6px 0 0 0; font-size: 13px;">
-                {{ $isCheckoutPage ? 'You can review the checkout record below.' : 'Scan the same QR code again at jam pulang to save checkout automatically.' }}
+                You can review the checkout record below.
+            </p>
+        </div>
+    @elseif($isCheckoutPage && $todayAbsence)
+        <div style="padding: 15px 20px; background: #fffbeb; border: 2px solid #f59e0b; border-radius: 8px; margin-bottom: 20px; color: #92400e;">
+            <i class="bi bi-exclamation-triangle-fill" style="margin-right: 8px;"></i>
+            <strong>Check-in recorded. Ready for checkout scan.</strong>
+            <p style="margin: 8px 0 0 0; font-size: 14px;">
+                Checked in at: {{ optional($todayAbsence->scanned_qr_at)->format('H:i:s') ?? 'N/A' }}
+            </p>
+            <p style="margin: 6px 0 0 0; font-size: 13px;">
+                Scan the same QR code again to save your pulang time.
+            </p>
+        </div>
+    @elseif($todayAbsence)
+        <div style="padding: 15px 20px; background: #dcfce7; border: 2px solid #10b981; border-radius: 8px; margin-bottom: 20px; color: #166534;">
+            <i class="bi bi-check-circle-fill" style="margin-right: 8px;"></i>
+            <strong>You have already marked your attendance today</strong>
+            <p style="margin: 8px 0 0 0; font-size: 14px;">
+                Scanned at: {{ optional($todayAbsence->scanned_qr_at)->format('H:i:s') ?? 'N/A' }}
+            </p>
+            <p style="margin: 6px 0 0 0; font-size: 13px;">
+                Scan the same QR code again at jam pulang to save checkout automatically.
             </p>
         </div>
     @elseif(!$todayQRCodes)
@@ -536,15 +558,15 @@
     <div class="card" style="max-width: 700px; margin: 0 auto;">
         <!-- Progress Indicators -->
         <div style="display: flex; gap: 15px; margin-bottom: 30px; padding: 15px; background: #f5f5f5; border-radius: 6px;">
-            <div style="flex: 1; text-align: center;">
+            <div id="step1-step" style="flex: 1; text-align: center;">
                 <div style="width: 40px; height: 40px; background: #f97316; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 600;" id="step1-icon">1</div>
                 <div style="font-weight: 600; font-size: 13px;">{{ $isCheckoutPage ? 'QR Pulang' : 'Scan QR' }}</div>
             </div>
-            <div style="flex: 1; text-align: center;">
+            <div id="step2-step" style="flex: 1; text-align: center;">
                 <div style="width: 40px; height: 40px; background: #d1d5db; color: #666; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 600;" id="step2-icon">2</div>
                 <div style="font-weight: 600; font-size: 13px;">{{ $isCheckoutPage ? 'Selfie Out' : 'Selfie' }}</div>
             </div>
-            <div style="flex: 1; text-align: center;">
+            <div id="step3-step" style="flex: 1; text-align: center;">
                 <div style="width: 40px; height: 40px; background: #d1d5db; color: #666; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 600;" id="step3-icon">3</div>
                 <div style="font-weight: 600; font-size: 13px;">{{ $isCheckoutPage ? 'Confirm' : 'Location' }}</div>
             </div>
@@ -922,12 +944,18 @@
             initCheckoutScanner();
 
             function setStepComplete(stepEl, badgeEl) {
+                if (!stepEl || !badgeEl) {
+                    return;
+                }
                 stepEl.classList.remove('is-active');
                 stepEl.classList.add('is-complete');
                 badgeEl.innerHTML = '<i class="bi bi-check-lg"></i>';
             }
 
             function setStepActive(stepEl) {
+                if (!stepEl) {
+                    return;
+                }
                 stepEl.classList.add('is-active');
             }
 
@@ -1131,6 +1159,7 @@
                 formData.append('latitude', state.latitude || '');
                 formData.append('longitude', state.longitude || '');
                 formData.append('ip_address', state.ipAddress || '');
+                formData.append('mode', isCheckoutPage ? 'checkout' : 'checkin');
                 formData.append('_token', '{{ csrf_token() }}');
 
                 fetch('{{ route("qrcode.scan") }}', {
@@ -1140,6 +1169,14 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            if (isCheckoutPage && data.data && data.data.action === 'checkout') {
+                                showStatus('Checkout saved successfully. Redirecting to Daily Agenda...', 'success');
+                                setTimeout(() => {
+                                    window.location.href = '{{ route("daily-agenda.index") }}';
+                                }, 1800);
+                                return;
+                            }
+
                             showStatus('Attendance saved successfully. Reloading the page...', 'success');
                             setTimeout(() => location.reload(), 2200);
                         } else {

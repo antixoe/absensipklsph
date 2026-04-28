@@ -143,7 +143,7 @@ class ReportController extends Controller
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Date range
-        $sheet->setCellValue('A2', 'Period: ' . $startDate->format('M d, Y') . ' to ' . $endDate->format('M d, Y'));
+        $sheet->setCellValue('A2', 'Period: ' . optional($startDate)->format('M d, Y') . ' to ' . optional($endDate)->format('M d, Y'));
         $sheet->mergeCells('A2:F2');
 
         // Summary Statistics
@@ -182,7 +182,7 @@ class ReportController extends Controller
         // Data rows
         $row = $headerRow + 1;
         foreach ($absences as $absence) {
-            $sheet->setCellValue('A' . $row, $absence->absence_date->format('M d, Y'));
+            $sheet->setCellValue('A' . $row, optional($absence->absence_date)->format('M d, Y') ?? 'N/A');
             $sheet->setCellValue('B' . $row, $absence->student->user->name ?? 'N/A');
             $sheet->setCellValue('C' . $row, $absence->student->user->email ?? 'N/A');
             $sheet->setCellValue('D' . $row, $absence->reason ?? '-');

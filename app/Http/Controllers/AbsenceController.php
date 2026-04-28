@@ -178,7 +178,7 @@ class AbsenceController extends Controller
                     'submitted_absence',
                     'absence',
                     $absence->id,
-                    "Submitted absence via $method for {$absenceDatetime->format('Y-m-d H:i')}",
+                    "Submitted absence via $method for " . (optional($absenceDatetime)->format('Y-m-d H:i') ?? 'N/A'),
                     [],
                     $logData
                 );

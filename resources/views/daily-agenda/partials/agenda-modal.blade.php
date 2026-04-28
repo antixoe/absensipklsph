@@ -9,13 +9,16 @@
         align-items: center;
         justify-content: center;
         padding: 20px;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .agenda-modal-shell {
         width: min(1120px, 100%);
-        max-height: 92vh;
+        height: min(calc(100vh - 40px), 980px);
         display: flex;
         flex-direction: column;
+        min-height: 0;
         overflow: hidden;
         border-radius: 22px;
         background: linear-gradient(180deg, #ffffff 0%, #fffdf8 100%);
@@ -114,7 +117,12 @@
     }
 
     .agenda-modal-body {
-        overflow: auto;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
         padding: 22px 24px 24px;
     }
 
@@ -323,6 +331,7 @@
     .agenda-modal-footer {
         display: flex;
         justify-content: flex-end;
+        flex: 0 0 auto;
         padding: 0 24px 24px;
     }
 
@@ -331,6 +340,48 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
         margin-bottom: 16px;
+    }
+
+    .agenda-edit-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 16px;
+    }
+
+    .agenda-edit-panel {
+        border-radius: 18px;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+        padding: 16px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .agenda-edit-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .agenda-edit-note {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 14px 15px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
+        border: 1px solid #bfdbfe;
+        color: #1d4ed8;
+        font-size: 13px;
+        line-height: 1.65;
+        margin-bottom: 16px;
+    }
+
+    .agenda-edit-note strong {
+        display: block;
+        margin-bottom: 2px;
+        font-size: 14px;
+        color: #1e3a8a;
     }
 
     .agenda-edit-field {
@@ -392,16 +443,95 @@
         resize: vertical;
     }
 
+    .agenda-assessment-section {
+        margin-bottom: 14px;
+        padding: 16px;
+        border-radius: 16px;
+        border: 1px solid #bfdbfe;
+        background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
+    }
+
+    .agenda-assessment-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .agenda-assessment-title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .agenda-assessment-description {
+        margin: 0 0 14px 0;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #1d4ed8;
+    }
+
+    .agenda-assessment-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .agenda-assessment-item {
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid #dbeafe;
+        background: #ffffff;
+    }
+
+    .agenda-assessment-label {
+        margin: 0 0 10px 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .agenda-assessment-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .agenda-assessment-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        cursor: pointer;
+    }
+
+    .agenda-assessment-option input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+    }
+
+    .agenda-assessment-option .label-text {
+        font-size: 13px;
+        font-weight: 700;
+    }
+
     @media (max-width: 900px) {
         .agenda-summary-grid,
         .agenda-section-grid,
         .agenda-approval-grid,
-        .agenda-edit-grid {
+        .agenda-edit-grid,
+        .agenda-edit-layout,
+        .agenda-edit-summary-grid {
             grid-template-columns: 1fr;
         }
 
         .agenda-modal-shell {
-            max-height: 95vh;
+            height: calc(100vh - 20px);
         }
     }
 </style>
@@ -452,64 +582,80 @@
             @method('PUT')
 
             <div class="agenda-modal-body">
-                <div id="agendaEditSummary" class="agenda-edit-grid"></div>
+                <div class="agenda-edit-layout">
+                    <div class="agenda-edit-panel">
+                        <div id="agendaEditSummary" class="agenda-edit-summary-grid"></div>
 
-                <div class="agenda-card agenda-card-wide" style="border-left: 4px solid #0284c7; margin-bottom: 16px;">
-                    <h4 style="margin-top: 0; color: #0369a1;">
-                        <i class="bi bi-lock" style="color: #0284c7;"></i>
-                        <span>Perubahan yang Diizinkan</span>
-                    </h4>
-                    <p class="agenda-empty" style="margin-bottom: 0; font-style: normal;">
-                        Hanya status persetujuan dan verifikasi yang bisa diubah. Isi agenda tetap terkunci.
-                    </p>
-                </div>
+                        <div class="agenda-edit-note">
+                            <i class="bi bi-lock-fill" style="font-size: 18px; margin-top: 2px;"></i>
+                            <div>
+                                <strong>Perubahan yang diizinkan</strong>
+                                <div>Hanya status persetujuan, penilaian harian, status verifikasi, dan catatan verifikator yang bisa diubah. Konten agenda tetap terkunci.</div>
+                            </div>
+                        </div>
 
-                <div class="agenda-edit-field">
-                    <label class="agenda-edit-label">
-                        Persetujuan Pembimbing Perusahaan
-                    </label>
-                    <label class="agenda-edit-toggle">
-                        <input type="hidden" name="company_mentor_approved" value="0">
-                        <input type="checkbox" id="agendaEditCompanyMentorApproved" name="company_mentor_approved" value="1">
-                        <span class="agenda-edit-toggle-text">
-                            Tandai sebagai disetujui oleh pembimbing perusahaan
-                        </span>
-                    </label>
-                </div>
+                        <div class="agenda-card agenda-card-wide" style="margin-bottom: 0; border-left: 4px solid #0284c7;">
+                            <h4 style="margin-top: 0; color: #0369a1;">
+                                <i class="bi bi-check2-all" style="color: #0284c7;"></i>
+                                <span>Ringkasan Status</span>
+                            </h4>
+                            <p class="agenda-empty" style="margin-bottom: 0; font-style: normal;">
+                                Gunakan panel kanan untuk mengubah status. Panel ini hanya menampilkan konteks singkat.
+                            </p>
+                        </div>
+                    </div>
 
-                <div class="agenda-edit-field">
-                    <label class="agenda-edit-label">
-                        Persetujuan Guru Pembimbing Sekolah
-                    </label>
-                    <label class="agenda-edit-toggle">
-                        <input type="hidden" name="school_teacher_approved" value="0">
-                        <input type="checkbox" id="agendaEditSchoolTeacherApproved" name="school_teacher_approved" value="1">
-                        <span class="agenda-edit-toggle-text">
-                            Tandai sebagai disetujui oleh guru pembimbing sekolah
-                        </span>
-                    </label>
-                </div>
+                    <div class="agenda-edit-panel">
+                        <div class="agenda-edit-field">
+                            <label class="agenda-edit-label">
+                                Persetujuan Pembimbing Perusahaan
+                            </label>
+                            <label class="agenda-edit-toggle">
+                                <input type="hidden" name="company_mentor_approved" value="0">
+                                <input type="checkbox" id="agendaEditCompanyMentorApproved" name="company_mentor_approved" value="1">
+                                <span class="agenda-edit-toggle-text">
+                                    Tandai sebagai disetujui oleh pembimbing perusahaan
+                                </span>
+                            </label>
+                        </div>
 
-                <div class="agenda-edit-field">
-                    <label for="agendaEditCompletionStatus" class="agenda-edit-label">
-                        Status Verifikasi PKL
-                    </label>
-                    <select id="agendaEditCompletionStatus" name="completion_status" class="agenda-edit-select" required>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                    </select>
-                    <p class="agenda-edit-help">
-                        Gunakan `pending` jika agenda belum selesai diverifikasi.
-                    </p>
-                </div>
+                        <div class="agenda-edit-field">
+                            <label class="agenda-edit-label">
+                                Persetujuan Guru Pembimbing Sekolah
+                            </label>
+                            <label class="agenda-edit-toggle">
+                                <input type="hidden" name="school_teacher_approved" value="0">
+                                <input type="checkbox" id="agendaEditSchoolTeacherApproved" name="school_teacher_approved" value="1">
+                                <span class="agenda-edit-toggle-text">
+                                    Tandai sebagai disetujui oleh guru pembimbing sekolah
+                                </span>
+                            </label>
+                        </div>
 
-                <div class="agenda-edit-field">
-                    <label for="agendaEditInstructorNotes" class="agenda-edit-label">
-                        Catatan Verifikator
-                    </label>
-                    <textarea id="agendaEditInstructorNotes" name="instructor_notes" class="agenda-edit-textarea" maxlength="1000" placeholder="Masukkan catatan verifikasi, revisi, atau keterangan persetujuan"></textarea>
-                    <p class="agenda-edit-help">Opsional, maksimal 1000 karakter.</p>
+                        <div class="agenda-edit-field">
+                            <label for="agendaEditCompletionStatus" class="agenda-edit-label">
+                                Status Verifikasi PKL
+                            </label>
+                            <select id="agendaEditCompletionStatus" name="completion_status" class="agenda-edit-select" required>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <p class="agenda-edit-help">
+                                Gunakan `pending` jika agenda belum selesai diverifikasi.
+                            </p>
+                        </div>
+
+                        <div class="agenda-edit-field" style="margin-bottom: 0;">
+                            <label for="agendaEditInstructorNotes" class="agenda-edit-label">
+                                Catatan Verifikator
+                            </label>
+                            <textarea id="agendaEditInstructorNotes" name="instructor_notes" class="agenda-edit-textarea" maxlength="1000" placeholder="Masukkan catatan verifikasi, revisi, atau keterangan persetujuan"></textarea>
+                            <p class="agenda-edit-help">Opsional, maksimal 1000 karakter.</p>
+                        </div>
+
+                        <div class="agenda-assessment-section" id="agendaEditAssessment" style="margin-top: 14px;"></div>
+                    </div>
                 </div>
             </div>
 
@@ -539,7 +685,7 @@
         const badgesEl = document.getElementById('agendaModalBadges');
         const summaryEl = document.getElementById('agendaModalSummary');
         const contentEl = document.getElementById('agendaModalContent');
-        const closeButtons = modal.querySelectorAll('[data-close-agenda-modal]');
+        const closeButtons = modal ? modal.querySelectorAll('[data-close-agenda-modal]') : [];
         const editTitleEl = document.getElementById('agendaEditModalTitle');
         const editSubtitleEl = document.getElementById('agendaEditModalSubtitle');
         const editBadgesEl = document.getElementById('agendaEditModalBadges');
@@ -549,6 +695,7 @@
         const editSchoolTeacherEl = document.getElementById('agendaEditSchoolTeacherApproved');
         const editCompletionStatusEl = document.getElementById('agendaEditCompletionStatus');
         const editInstructorNotesEl = document.getElementById('agendaEditInstructorNotes');
+        const editAssessmentEl = document.getElementById('agendaEditAssessment');
         const editCloseButtons = editModal ? editModal.querySelectorAll('[data-close-agenda-edit-modal]') : [];
 
         const toneMap = {
@@ -800,8 +947,54 @@
                 summaryCard('Tanggal', `${normalize(agenda.agenda_date) || '-'}${normalize(agenda.day_name) ? ` (${agenda.day_name})` : ''}`, 'calendar-event', 'orange'),
                 summaryCard('Status', completionLabel, 'check2-circle', completionTone),
                 summaryCard('Submitted', submissionLabel, 'check-circle', submissionTone),
-                summaryCard('Pembimbing', normalize(agenda.completed_by) || 'Belum ada', 'person-check', 'purple'),
+                summaryCard('Verifikator', normalize(agenda.completed_by) || 'Belum ada', 'person-check', 'purple'),
             ].join('');
+        }
+
+        function assessmentChoice(name, value, checked) {
+            const isChecked = Boolean(checked);
+            const accent = value === 'Baik' ? '#10b981' : '#f97316';
+            const background = isChecked ? (value === 'Baik' ? '#f0fdf4' : '#fff7ed') : '#ffffff';
+            const border = isChecked ? accent : '#d1d5db';
+            const textColor = value === 'Baik' ? '#166534' : '#9a3412';
+
+            return `
+                <label class="agenda-assessment-option" style="border-color: ${border}; background: ${background};">
+                    <input type="radio" name="${escapeHtml(name)}" value="${escapeHtml(value)}" ${isChecked ? 'checked' : ''} required>
+                    <span class="label-text" style="color: ${textColor};">${escapeHtml(value)}</span>
+                </label>
+            `;
+        }
+
+        function buildAssessmentEditor(agenda) {
+            const labels = ['Senyum', 'Keramahan', 'Penampilan', 'Komunikasi', 'Realisasi Kerja'];
+            const items = Array.isArray(agenda.daily_assessment) ? agenda.daily_assessment : [];
+
+            return `
+                <div class="agenda-assessment-header">
+                    <i class="bi bi-star-fill" style="color: #0284c7;"></i>
+                    <p class="agenda-assessment-title">Penilaian Harian</p>
+                </div>
+                <p class="agenda-assessment-description">
+                    Tentukan nilai Baik atau Kurang untuk setiap aspek di bawah ini.
+                </p>
+                <div class="agenda-assessment-list">
+                    ${labels.map(function (label, index) {
+                        const selected = normalize(items[index] && items[index].value);
+                        const fieldName = `daily_assessment[${index}]`;
+
+                        return `
+                            <div class="agenda-assessment-item">
+                                <p class="agenda-assessment-label">${index + 1}. ${escapeHtml(label)}</p>
+                                <div class="agenda-assessment-options">
+                                    ${assessmentChoice(fieldName, 'Baik', selected === 'Baik')}
+                                    ${assessmentChoice(fieldName, 'Kurang', selected === 'Kurang')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
         }
 
         function buildBody(agenda) {
@@ -909,11 +1102,26 @@
             if (editInstructorNotesEl) {
                 editInstructorNotesEl.value = normalize(agenda.instructor_notes);
             }
+
+            if (editAssessmentEl) {
+                editAssessmentEl.innerHTML = buildAssessmentEditor(agenda);
+            }
         }
 
-        window.openAgendaModal = function (button) {
+        window.openAgendaModal = function (button, event) {
             try {
-                const agenda = JSON.parse(button.dataset.agenda || '{}');
+                if (event && typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                }
+
+                if (!modal) {
+                    if (button && button.href) {
+                        window.location.href = button.href;
+                    }
+                    return;
+                }
+
+                const agenda = JSON.parse(button.getAttribute('data-agenda') || (button.dataset ? button.dataset.agenda : '') || '{}');
                 setModalData(agenda);
                 modal.style.display = 'flex';
                 modal.setAttribute('aria-hidden', 'false');
@@ -923,9 +1131,20 @@
             }
         };
 
-        window.openAgendaEditModal = function (button) {
+        window.openAgendaEditModal = function (button, event) {
             try {
-                const agenda = JSON.parse(button.dataset.agenda || '{}');
+                if (event && typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                }
+
+                if (!editModal) {
+                    if (button && button.href) {
+                        window.location.href = button.href;
+                    }
+                    return;
+                }
+
+                const agenda = JSON.parse(button.getAttribute('data-agenda') || (button.dataset ? button.dataset.agenda : '') || '{}');
                 setEditModalData(agenda);
                 if (modal) {
                     window.closeAgendaModal();

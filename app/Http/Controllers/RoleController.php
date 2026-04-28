@@ -116,7 +116,7 @@ class RoleController extends Controller
         }
 
         // Prevent deletion of predefined system roles
-        $systemRoles = ['student', 'industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin'];
+        $systemRoles = ['student', 'pembimbing', 'pembimbing_perusahaan', 'guru_pembimbing', 'guru_pembimbing_sekolah', 'industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin'];
         if (in_array($role->name, $systemRoles)) {
             return redirect()->route('admin.roles')
                 ->with('error', 'Cannot delete system roles. This role is essential to the application.');

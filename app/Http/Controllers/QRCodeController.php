@@ -145,6 +145,7 @@ class QRCodeController extends Controller
     public function scanner()
     {
         $currentUser = Auth::user();
+        $isCheckoutPage = request()->routeIs('absen.pulang');
 
         if (!$currentUser->hasRole(Role::STUDENT)) {
             return redirect()->route('dashboard')->with('error', 'You must be registered as a student to scan QR codes.');
@@ -164,12 +165,22 @@ class QRCodeController extends Controller
             ->first();
 
         $todayAbsence = null;
-        if ($todayQRCodes) {
+        if ($isCheckoutPage) {
+            $todayAbsence = Absence::where('student_id', $student->id)
+                ->whereDate('absence_date', Carbon::today())
+                ->latest('scanned_qr_at')
+                ->first();
+        } elseif ($todayQRCodes) {
             $todayAbsence = Absence::where('student_id', $student->id)
                 ->whereDate('absence_date', Carbon::today())
                 ->where('qr_code_id', $todayQRCodes->id)
                 ->latest('scanned_qr_at')
                 ->first();
+        }
+
+        if ($isCheckoutPage && $todayAbsence && $todayAbsence->scanned_qr_out_at) {
+            return redirect()->route('daily-agenda.index')
+                ->with('success', 'Checkout already recorded today. You have been moved to Daily Agenda.');
         }
 
         return view('qrcode.scanner', compact('student', 'todayQRCodes', 'todayAbsence'));
@@ -186,6 +197,7 @@ class QRCodeController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'ip_address' => 'nullable|string',
+            'mode' => 'nullable|in:checkin,checkout',
         ]);
 
         $currentUser = Auth::user();
@@ -234,13 +246,26 @@ class QRCodeController extends Controller
             }
 
             // Check if student already marked attendance via this QR code today
-            $existingAbsence = Absence::where('student_id', $student->id)
-                ->where('qr_code_id', $qrCode->id)
-                ->whereDate('absence_date', Carbon::today())
-                ->first();
+            $scanMode = $validated['mode'] ?? 'checkin';
+            $existingAbsence = $scanMode === 'checkout'
+                ? Absence::where('student_id', $student->id)
+                    ->whereDate('absence_date', Carbon::today())
+                    ->latest('scanned_qr_at')
+                    ->first()
+                : Absence::where('student_id', $student->id)
+                    ->where('qr_code_id', $qrCode->id)
+                    ->whereDate('absence_date', Carbon::today())
+                    ->first();
 
             if ($existingAbsence) {
-                if (!$existingAbsence->scanned_qr_out_at) {
+                if ($existingAbsence->scanned_qr_out_at) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You have already checked out today at ' . $existingAbsence->scanned_qr_out_at->format('H:i:s')
+                    ], 400);
+                }
+
+                if ($scanMode === 'checkout') {
                     $existingAbsence->update([
                         'scanned_qr_out_at' => Carbon::now(),
                     ]);
@@ -259,7 +284,14 @@ class QRCodeController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'You have already checked out today at ' . $existingAbsence->scanned_qr_out_at->format('H:i:s')
+                    'message' => 'You have already checked in today. Please use the checkout flow to record pulang.'
+                ], 400);
+            }
+
+            if ($scanMode === 'checkout') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You must check in first before you can scan checkout.'
                 ], 400);
             }
 

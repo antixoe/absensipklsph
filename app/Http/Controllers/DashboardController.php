@@ -47,7 +47,7 @@ class DashboardController extends Controller
         $attendances = Attendance::whereBetween('attendance_date', [$startDate, $endDate])
             ->get()
             ->groupBy(function ($item) {
-                return $item->attendance_date->format('Y-m-d');
+                return optional($item->attendance_date)->format('Y-m-d') ?? 'unknown';
             });
 
         // Get all students with attendance records

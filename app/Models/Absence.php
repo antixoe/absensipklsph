@@ -33,7 +33,7 @@ class Absence extends Model
     protected $casts = [
         'latitude' => 'float',
         'longitude' => 'float',
-        'absence_date' => 'date',
+        'absence_date' => 'datetime',
         'scanned_qr_at' => 'datetime',
         'scanned_qr_out_at' => 'datetime',
         'approved_at' => 'datetime',

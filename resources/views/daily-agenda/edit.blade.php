@@ -2,8 +2,8 @@
 
 @section('content')
     <div class="page-header">
-        <h1><i class="bi bi-pencil-square" style="margin-right: 8px;"></i>Edit Status Agenda</h1>
-        <p>Hanya persetujuan dan verifikasi yang bisa diubah. Isi agenda tetap terkunci.</p>
+        <h1><i class="bi bi-pencil-square" style="margin-right: 8px;"></i>Kelola Status Agenda</h1>
+        <p>Pembimbing dan verifikator lain bisa mengubah persetujuan, penilaian harian, status verifikasi, dan catatan verifikator.</p>
     </div>
 
     <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; max-width: 1400px; margin: 0 auto;">
@@ -23,7 +23,7 @@
                 </div>
                 <div style="padding: 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e5e7eb;">
                     <p style="margin: 0; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">Tanggal</p>
-                    <p style="margin: 8px 0 0 0; font-size: 15px; font-weight: 600; color: #111827;">{{ $dailyAgenda->agenda_date->format('d/m/Y') }}</p>
+                    <p style="margin: 8px 0 0 0; font-size: 15px; font-weight: 600; color: #111827;">{{ optional($dailyAgenda->agenda_date)->format('d/m/Y') ?? 'N/A' }}</p>
                 </div>
                 <div style="padding: 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e5e7eb;">
                     <p style="margin: 0; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">Jam</p>
@@ -43,10 +43,10 @@
                         Pembimbing Perusahaan: {{ $dailyAgenda->company_mentor_approved ? 'Disetujui' : 'Belum disetujui' }}
                     </span>
                     <span style="padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: {{ $dailyAgenda->school_teacher_approved ? '#dcfce7' : '#fef3c7' }}; color: {{ $dailyAgenda->school_teacher_approved ? '#166534' : '#92400e' }};">
-                        Guru Sekolah: {{ $dailyAgenda->school_teacher_approved ? 'Disetujui' : 'Belum disetujui' }}
+                        Guru Pembimbing Sekolah: {{ $dailyAgenda->school_teacher_approved ? 'Disetujui' : 'Belum disetujui' }}
                     </span>
                     <span style="padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: {{ $dailyAgenda->completion_status === 'approved' ? '#dcfce7' : ($dailyAgenda->completion_status === 'rejected' ? '#fee2e2' : '#fef3c7') }}; color: {{ $dailyAgenda->completion_status === 'approved' ? '#166534' : ($dailyAgenda->completion_status === 'rejected' ? '#991b1b' : '#92400e') }};">
-                        Verifikasi: {{ ucfirst($dailyAgenda->completion_status) }}
+                        Verifikasi: {{ $dailyAgenda->completion_status === 'approved' ? 'Disetujui' : ($dailyAgenda->completion_status === 'rejected' ? 'Ditolak' : 'Pending') }}
                     </span>
                 </div>
             </div>
@@ -70,6 +70,16 @@
                 <i class="bi bi-check2-square" style="color: #0284c7;"></i> Persetujuan & Verifikasi
             </h3>
 
+            @if ($canReviewAgenda)
+                <div style="padding: 14px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; margin-bottom: 16px; color: #1d4ed8; font-size: 13px; line-height: 1.6; display: flex; gap: 10px; align-items: flex-start;">
+                    <i class="bi bi-shield-check" style="margin-top: 2px; font-size: 16px;"></i>
+                    <div>
+                        <strong>Akses verifikator aktif.</strong>
+                        <div style="margin-top: 2px;">Ubah hanya status persetujuan, status verifikasi, dan catatan verifikator. Isi agenda tetap terkunci.</div>
+                    </div>
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div style="padding: 14px 16px; background: #fee2e2; border: 1px solid #ef4444; border-radius: 10px; margin-bottom: 16px; color: #991b1b;">
                     <strong>Terjadi kesalahan:</strong>
@@ -86,7 +96,7 @@
                 @method('PUT')
 
                 <div style="padding: 14px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; color: #1d4ed8; font-size: 13px; line-height: 1.6;">
-                    <strong>Catatan:</strong> Halaman ini hanya untuk mengubah status persetujuan dan verifikasi. Teks agenda, rencana kerja, realisasi, dan catatan utama tidak bisa diubah dari sini.
+                    <strong>Catatan:</strong> Halaman ini hanya untuk mengubah status persetujuan, penilaian harian, dan verifikasi. Teks agenda, rencana kerja, realisasi, dan catatan utama tidak bisa diubah dari sini.
                 </div>
 
                 <div>
@@ -111,11 +121,51 @@
                     <label for="completion_status" style="display: block; margin-bottom: 8px; font-weight: 700; color: #111827;">Status Verifikasi PKL</label>
                     <select name="completion_status" id="completion_status" style="width: 100%; padding: 12px 14px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px;">
                         <option value="pending" {{ old('completion_status', $dailyAgenda->completion_status) === 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="approved" {{ old('completion_status', $dailyAgenda->completion_status) === 'approved' ? 'selected' : '' }}>Approved</option>
-                        <option value="rejected" {{ old('completion_status', $dailyAgenda->completion_status) === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                        <option value="approved" {{ old('completion_status', $dailyAgenda->completion_status) === 'approved' ? 'selected' : '' }}>Disetujui</option>
+                        <option value="rejected" {{ old('completion_status', $dailyAgenda->completion_status) === 'rejected' ? 'selected' : '' }}>Ditolak</option>
                     </select>
                     @error('completion_status')
                         <span style="color: #dc2626; font-size: 12px;">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div style="padding: 16px; border-radius: 12px; border: 1px solid #bfdbfe; background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+                        <i class="bi bi-star-fill" style="color: #0284c7;"></i>
+                        <label style="display: block; font-weight: 800; color: #0f172a;">Penilaian Harian</label>
+                    </div>
+                    <p style="margin: 0 0 14px 0; font-size: 13px; color: #1d4ed8; line-height: 1.6;">
+                        Tentukan nilai Baik atau Kurang untuk setiap aspek berikut.
+                    </p>
+
+                    @php
+                        $assessmentLabels = ['Senyum', 'Keramahan', 'Penampilan', 'Komunikasi', 'Realisasi Kerja'];
+                    @endphp
+
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        @foreach ($assessmentLabels as $index => $label)
+                            @php
+                                $currentAssessment = old("daily_assessment.$index", data_get($dailyAgenda->daily_assessment, $index . '.value', ''));
+                            @endphp
+                            <div style="padding: 12px 14px; background: #ffffff; border: 1px solid #dbeafe; border-radius: 10px;">
+                                <div style="margin-bottom: 10px; font-size: 13px; font-weight: 700; color: #0f172a;">
+                                    {{ $index + 1 }}. {{ $label }}
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                    <label style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid {{ $currentAssessment === 'Baik' ? '#10b981' : '#d1d5db' }}; border-radius: 999px; background: {{ $currentAssessment === 'Baik' ? '#f0fdf4' : '#fff' }}; cursor: pointer;">
+                                        <input type="radio" name="daily_assessment[{{ $index }}]" value="Baik" {{ $currentAssessment === 'Baik' ? 'checked' : '' }} required>
+                                        <span style="font-size: 13px; font-weight: 700; color: #166534;">Baik</span>
+                                    </label>
+                                    <label style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid {{ $currentAssessment === 'Kurang' ? '#f97316' : '#d1d5db' }}; border-radius: 999px; background: {{ $currentAssessment === 'Kurang' ? '#fff7ed' : '#fff' }}; cursor: pointer;">
+                                        <input type="radio" name="daily_assessment[{{ $index }}]" value="Kurang" {{ $currentAssessment === 'Kurang' ? 'checked' : '' }} required>
+                                        <span style="font-size: 13px; font-weight: 700; color: #9a3412;">Kurang</span>
+                                    </label>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    @error('daily_assessment')
+                        <span style="color: #dc2626; font-size: 12px; display: block; margin-top: 8px;">{{ $message }}</span>
                     @enderror
                 </div>
 

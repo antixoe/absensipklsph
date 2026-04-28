@@ -1,15 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-    @php($isCheckoutPage = request()->routeIs('absen.pulang.all'))
     <div class="page-header">
-        <h1><i class="bi bi-clipboard-check" style="margin-right: 8px;"></i>{{ $isCheckoutPage ? 'Absen Pulang Records' : 'All Student Absences' }}</h1>
-        <p>{{ $isCheckoutPage ? 'View student check-in and checkout records' : 'View complete absence records for all students' }}</p>
+        <h1><i class="bi bi-clipboard-check" style="margin-right: 8px;"></i>All Student Absences</h1>
+        <p>View complete absence records for all students</p>
     </div>
 
     <!-- Search & Filter Section -->
     <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
-        <form method="GET" action="{{ $isCheckoutPage ? route('absen.pulang.all') : route('absence.all') }}" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
+        <form method="GET" action="{{ route('absence.all') }}" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
             <!-- Search Input -->
             <div>
                 <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">Search by Name or NIM</label>
@@ -53,7 +52,7 @@
                                             border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">
                     <i class="bi bi-search"></i> Search
                 </button>
-                <a href="{{ $isCheckoutPage ? route('absen.pulang.all') : route('absence.all') }}" style="padding: 10px 16px; background: #6b7280; color: white; 
+                <a href="{{ route('absence.all') }}" style="padding: 10px 16px; background: #6b7280; color: white; 
                                                            border: none; border-radius: 6px; font-weight: 600; 
                                                            cursor: pointer; text-decoration: none; display: flex; 
                                                            align-items: center; font-size: 14px;">
@@ -108,10 +107,10 @@
                                     <small style="background: #f5f5f5; padding: 4px 8px; border-radius: 4px;">{{ $absence->student->nim }}</small>
                                 </td>
                                 <td style="padding: 12px;">
-                                    {{ $absence->scanned_qr_at ? $absence->scanned_qr_at->format('M d, Y H:i') : $absence->absence_date->format('M d, Y H:i') }}
+                                    {{ optional($absence->scanned_qr_at ?? $absence->absence_date)->format('M d, Y H:i') ?? 'N/A' }}
                                 </td>
                                 <td style="padding: 12px;">
-                                    {{ $absence->scanned_qr_out_at ? $absence->scanned_qr_out_at->format('M d, Y H:i') : '—' }}
+                                    {{ optional($absence->scanned_qr_out_at)->format('M d, Y H:i') ?? '—' }}
                                 </td>
                                 <td style="padding: 12px;">
                                     <small style="color: #666;">{{ $absence->location_name ?? '—' }}</small>

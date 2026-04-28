@@ -55,7 +55,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
     Route::get('/absence/all', [AbsenceController::class, 'all'])->name('absence.all');
     Route::get('/absen-pulang', [QRCodeController::class, 'scanner'])->name('absen.pulang');
-    Route::get('/absen-pulang/all', [AbsenceController::class, 'all'])->name('absen.pulang.all');
     
     // Daily Agenda CRUD
     Route::get('/daily-agenda', [DailyAgendaController::class, 'index'])->name('daily-agenda.index');

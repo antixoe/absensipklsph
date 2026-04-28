@@ -57,13 +57,13 @@
             <!-- Created At -->
             <div>
                 <label style="display: block; margin-bottom: 5px; color: #666; font-size: 12px; font-weight: 600;">Created</label>
-                <p style="font-size: 16px; font-weight: 500;">{{ $user->created_at->format('M d, Y H:i') }}</p>
+                <p style="font-size: 16px; font-weight: 500;">{{ optional($user->created_at)->format('M d, Y H:i') ?? 'N/A' }}</p>
             </div>
 
             <!-- Updated At -->
             <div>
                 <label style="display: block; margin-bottom: 5px; color: #666; font-size: 12px; font-weight: 600;">Last Updated</label>
-                <p style="font-size: 16px; font-weight: 500;">{{ $user->updated_at->format('M d, Y H:i') }}</p>
+                <p style="font-size: 16px; font-weight: 500;">{{ optional($user->updated_at)->format('M d, Y H:i') ?? 'N/A' }}</p>
             </div>
         </div>
 

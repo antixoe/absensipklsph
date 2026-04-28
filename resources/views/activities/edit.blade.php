@@ -31,7 +31,7 @@
 
             <div>
                 <label for="date" style="display: block; margin-bottom: 8px; font-weight: 600;">Date <span style="color: #dc2626;">*</span></label>
-                <input type="date" id="date" name="date" value="{{ old('date', $activity->activity_date->format('Y-m-d')) }}" required style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px;">
+                <input type="date" id="date" name="date" value="{{ old('date', optional($activity->activity_date)->format('Y-m-d')) }}" required style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px;">
                 @error('date') <span style="color: #dc2626; font-size: 12px;">{{ $message }}</span> @enderror
             </div>
 

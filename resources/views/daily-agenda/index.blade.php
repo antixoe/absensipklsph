@@ -175,6 +175,7 @@
                             <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 14px;">Jam Datang</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 14px;">Jam Pulang</th>
                             <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 14px;">Status</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 14px;">Verifikasi PKL</th>
                             <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 14px;">Aksi</th>
                         </tr>
                     </thead>
@@ -213,8 +214,8 @@
                                     </span>
                                 </td>
                                 <td style="padding: 12px; font-size: 14px;">
-                                    <strong>{{ $agenda->agenda_date->format('d/m/Y') }}</strong>
-                                    <br><small style="color: #999;">{{ $agenda->agenda_date->format('l') }}</small>
+                                    <strong>{{ optional($agenda->agenda_date)->format('d/m/Y') ?? 'N/A' }}</strong>
+                                    <br><small style="color: #999;">{{ optional($agenda->agenda_date)->format('l') ?? 'N/A' }}</small>
                                 </td>
                                 <td style="padding: 12px; font-size: 14px;">
                                     <span style="background: #fed7aa; color: #92400e; padding: 4px 8px; border-radius: 4px;">{{ $agenda->time_in ?? '-' }}</span>
@@ -230,6 +231,23 @@
                                     @else
                                         <span style="background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-weight: 600;">
                                             <i class="bi bi-pencil-square"></i> Draft
+                                        </span>
+                                    @endif
+                                </td>
+                                <td style="padding: 12px; font-size: 14px;">
+                                    @if ($agenda->is_completed)
+                                        @if ($agenda->completion_status === 'approved')
+                                            <span style="background: #f0fdf4; color: #166534; border: 2px solid #10b981; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                                <i class="bi bi-check-circle-fill"></i> Disetujui
+                                            </span>
+                                        @else
+                                            <span style="background: #fee2e2; color: #7f1d1d; border: 2px solid #dc2626; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                                <i class="bi bi-x-circle-fill"></i> Ditolak
+                                            </span>
+                                        @endif
+                                    @else
+                                        <span style="background: #fffbeb; color: #92400e; border: 2px solid #f59e0b; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <i class="bi bi-hourglass-split"></i> Pending
                                         </span>
                                     @endif
                                 </td>
@@ -342,5 +360,4 @@
     </script>
 
 @endsection
-
 

@@ -31,15 +31,16 @@ class AbsenceSubmittedNotification extends Notification
     public function toDatabase($notifiable)
     {
         $methodLabel = $this->submissionMethod === 'qr' ? 'QR Code' : 'Selfie';
+        $absenceDate = optional($this->absence->absence_date)->format('M d, Y H:i') ?? 'N/A';
         
         return [
             'title' => 'New Absence Submitted',
-            'message' => "{$this->student->name} has marked absence on {$this->absence->absence_date->format('M d, Y H:i')} via {$methodLabel}",
+            'message' => "{$this->student->name} has marked absence on {$absenceDate} via {$methodLabel}",
             'student_name' => $this->student->name,
             'student_id' => $this->student->id,
             'absence_id' => $this->absence->id,
             'submission_method' => $this->submissionMethod,
-            'submission_date' => $this->absence->absence_date->format('M d, Y H:i'),
+            'submission_date' => $absenceDate,
             'location' => $this->absence->location_name ?? 'Not provided',
             'ip_address' => $this->absence->ip_address ?? 'Not provided',
         ];
@@ -50,13 +51,14 @@ class AbsenceSubmittedNotification extends Notification
         $methodLabel = $this->submissionMethod === 'qr' ? 'QR Code' : 'Selfie';
         $location = $this->absence->location_name ?? 'Not provided';
         $ip = $this->absence->ip_address ?? 'Not provided';
+        $absenceDate = optional($this->absence->absence_date)->format('M d, Y H:i') ?? 'N/A';
         
         return (new MailMessage)
             ->subject("New Absence Submission: {$this->student->name}")
             ->greeting("Hello {$notifiable->name},")
             ->line("{$this->student->name} has submitted an absence record via {$methodLabel}.")
             ->line("**Student Name:** {$this->student->name}")
-            ->line("**Date & Time:** {$this->absence->absence_date->format('M d, Y H:i')}")
+            ->line("**Date & Time:** {$absenceDate}")
             ->line("**Method:** {$methodLabel}")
             ->line("**Location:** {$location}")
             ->line("**IP Address:** {$ip}")

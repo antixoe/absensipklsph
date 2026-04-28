@@ -67,7 +67,7 @@
                                 </span>
                             </td>
                             <td style="padding: 15px; color: #666; font-size: 14px;">
-                                {{ $user->deleted_at ? $user->deleted_at->format('M d, Y at H:i') : 'N/A' }}
+                                {{ optional($user->deleted_at)->format('M d, Y at H:i') ?? 'N/A' }}
                             </td>
                             <td style="padding: 15px;">
                                 <div style="display: flex; gap: 8px;">

@@ -17,13 +17,46 @@ use Carbon\Carbon;
 class DailyAgendaController extends Controller
 {
     /**
-     * Check if the current user is an instructor or admin.
+     * Check if the current user can review daily agendas.
      */
     private function isInstructorOrAdmin()
     {
-        $currentUser = Auth::user();
+        return $this->isAgendaReviewer(Auth::user());
+    }
 
-        return $currentUser->role && in_array($currentUser->role->name, $this->agendaReviewerRoles());
+    /**
+     * Check if a user is allowed to review daily agendas.
+     */
+    private function isAgendaReviewer(?User $user): bool
+    {
+        if (!$user?->role) {
+            return false;
+        }
+
+        $roleName = $this->normalizeRoleName($user->role->name);
+
+        if (in_array($roleName, array_map(fn (string $role) => $this->normalizeRoleName($role), $this->agendaReviewerRoles()), true)) {
+            return true;
+        }
+
+        foreach (['pembimbing', 'mentor', 'instructor', 'supervisor', 'teacher', 'principal', 'admin'] as $keyword) {
+            if (str_contains($roleName, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Normalize role names so matching stays stable across stored variants.
+     */
+    private function normalizeRoleName(string $roleName): string
+    {
+        $normalized = strtolower(trim($roleName));
+        $normalized = preg_replace('/[^a-z0-9]+/', '_', $normalized) ?? $normalized;
+
+        return trim($normalized, '_');
     }
 
     /**
@@ -32,6 +65,11 @@ class DailyAgendaController extends Controller
     private function agendaReviewerRoles(): array
     {
         return [
+            'pembimbing',
+            'pembimbing_perusahaan',
+            'guru_pembimbing',
+            'guru_pembimbing_sekolah',
+            'instructor',
             Role::INDUSTRY_SUPERVISOR,
             Role::HEAD_OF_DEPARTMENT,
             Role::HOMEROOM_TEACHER,
@@ -45,9 +83,9 @@ class DailyAgendaController extends Controller
      */
     private function agendaReviewerUsers()
     {
-        return User::whereHas('role', function ($query) {
-            $query->whereIn('name', $this->agendaReviewerRoles());
-        })->get();
+        return User::with('role')
+            ->get()
+            ->filter(fn (User $user) => $this->isAgendaReviewer($user));
     }
 
     /**
@@ -105,10 +143,11 @@ class DailyAgendaController extends Controller
     public function index()
     {
         $currentUser = Auth::user();
+        $canReviewAgenda = $this->isInstructorOrAdmin();
         
-        // If instructor or admin, show all student agendas
-        if ($this->isInstructorOrAdmin()) {
-            return $this->indexForInstructors();
+        // If this user can review agendas, show all student agendas
+        if ($canReviewAgenda) {
+            return $this->indexForInstructors($canReviewAgenda);
         }
 
         // For students, show only their own agendas
@@ -128,15 +167,17 @@ class DailyAgendaController extends Controller
             ->with([
                 'canCreateAgenda' => $attendanceContext['canCreateAgenda'],
                 'agendaBlockMessage' => $attendanceContext['blockMessage'],
+                'canReviewAgenda' => $canReviewAgenda,
             ]);
     }
 
     /**
-     * Show all daily agendas for instructors and admins.
+     * Show all daily agendas for reviewers.
      */
-    public function indexForInstructors()
+    public function indexForInstructors(?bool $canReviewAgenda = null)
     {
         $currentUser = Auth::user();
+        $canReviewAgenda ??= $this->isInstructorOrAdmin();
         
         // Get all agendas with student information, ordered by date
         $agendasQuery = DailyAgenda::with(['student.user', 'completedBy'])
@@ -160,7 +201,7 @@ class DailyAgendaController extends Controller
         // Get list of students for filter dropdown
         $students = Student::with('user')->orderBy('user_id')->get();
 
-        return view('daily-agenda.index-instructor', compact('agendas', 'students', 'currentUser'));
+        return view('daily-agenda.index-instructor', compact('agendas', 'students', 'currentUser', 'canReviewAgenda'));
     }
 
     /**
@@ -320,7 +361,7 @@ class DailyAgendaController extends Controller
         if ($todayAbsence) {
             $timeIn = $todayAbsence->scanned_qr_at
                 ? $todayAbsence->scanned_qr_at->format('H:i')
-                : $todayAbsence->created_at->format('H:i');
+                : (optional($todayAbsence->created_at)->format('H:i') ?? 'N/A');
 
             if ($todayAbsence->scanned_qr_out_at) {
                 $timeOut = $todayAbsence->scanned_qr_out_at->format('H:i');
@@ -350,11 +391,12 @@ class DailyAgendaController extends Controller
     public function show(DailyAgenda $dailyAgenda)
     {
         $currentUser = Auth::user();
+        $canReviewAgenda = $this->isInstructorOrAdmin();
         
-        // Check if user is instructor or admin
-        if ($this->isInstructorOrAdmin()) {
-            // Instructors and admins can view any agenda
-            return view('daily-agenda.show', compact('dailyAgenda', 'currentUser'));
+        // Check if user can review agendas
+        if ($canReviewAgenda) {
+            // Reviewers can view any agenda
+            return view('daily-agenda.show', compact('dailyAgenda', 'currentUser', 'canReviewAgenda'));
         }
 
         // For students, check if it's their own agenda
@@ -366,7 +408,7 @@ class DailyAgendaController extends Controller
                 ->with('error', 'Unauthorized access.');
         }
 
-        return view('daily-agenda.show', compact('dailyAgenda', 'currentUser'));
+        return view('daily-agenda.show', compact('dailyAgenda', 'currentUser', 'canReviewAgenda'));
     }
 
     /**
@@ -375,27 +417,29 @@ class DailyAgendaController extends Controller
     public function edit(DailyAgenda $dailyAgenda)
     {
         $currentUser = Auth::user();
+        $canReviewAgenda = $this->isInstructorOrAdmin();
 
-        if (!$this->isInstructorOrAdmin()) {
+        if (!$canReviewAgenda) {
             return redirect()->route('daily-agenda.show', $dailyAgenda->id)
-                ->with('error', 'Only instructors and admins can edit agenda status.');
+                ->with('error', 'Hanya verifikator agenda yang bisa mengubah status agenda.');
         }
 
         $dailyAgenda->load(['student.user', 'completedBy']);
 
-        return view('daily-agenda.edit', compact('dailyAgenda', 'currentUser'));
+        return view('daily-agenda.edit', compact('dailyAgenda', 'currentUser', 'canReviewAgenda'));
     }
 
     /**
-     * Update agenda approval and verification status only.
+     * Update agenda approval, assessment, and verification status.
      */
     public function update(Request $request, DailyAgenda $dailyAgenda)
     {
         $currentUser = Auth::user();
+        $canReviewAgenda = $this->isInstructorOrAdmin();
 
-        if (!$this->isInstructorOrAdmin()) {
+        if (!$canReviewAgenda) {
             return redirect()->route('daily-agenda.show', $dailyAgenda->id)
-                ->with('error', 'Only instructors and admins can edit agenda status.');
+                ->with('error', 'Hanya verifikator agenda yang bisa mengubah status agenda.');
         }
 
         $validated = $request->validate([
@@ -403,16 +447,33 @@ class DailyAgendaController extends Controller
             'school_teacher_approved' => 'nullable|boolean',
             'completion_status' => 'required|in:pending,approved,rejected',
             'instructor_notes' => 'nullable|string|max:1000',
+            'daily_assessment' => 'nullable|array|size:5',
+            'daily_assessment.*' => 'nullable|in:Baik,Kurang',
         ]);
 
         $originalCompanyMentorApproved = (bool) $dailyAgenda->company_mentor_approved;
         $originalSchoolTeacherApproved = (bool) $dailyAgenda->school_teacher_approved;
         $originalCompletionStatus = $dailyAgenda->completion_status;
-
         $companyMentorApproved = $request->boolean('company_mentor_approved');
         $schoolTeacherApproved = $request->boolean('school_teacher_approved');
         $completionStatus = $validated['completion_status'];
         $isCompleted = $completionStatus !== 'pending';
+        $assessmentLabels = ['Senyum', 'Keramahan', 'Penampilan', 'Komunikasi', 'Realisasi Kerja'];
+        $submittedAssessments = $request->input('daily_assessment', []);
+        $dailyAssessment = [];
+
+        foreach ($assessmentLabels as $index => $label) {
+            $submittedValue = $submittedAssessments[$index] ?? null;
+            $currentValue = $dailyAgenda->daily_assessment[$index]['value'] ?? null;
+            $normalizedValue = in_array($submittedValue, ['Baik', 'Kurang'], true)
+                ? $submittedValue
+                : $currentValue;
+
+            $dailyAssessment[] = [
+                'label' => $label,
+                'value' => $normalizedValue,
+            ];
+        }
 
         $dailyAgenda->update([
             'company_mentor_approved' => $companyMentorApproved,
@@ -428,23 +489,26 @@ class DailyAgendaController extends Controller
             'completed_at' => $isCompleted ? now() : null,
             'instructor_notes' => $validated['instructor_notes'] ?? null,
             'completion_status' => $completionStatus,
+            'daily_assessment' => $dailyAssessment,
         ]);
 
         ActivityLoggerService::log(
             'updated_daily_agenda_status',
             'daily_agenda',
             $dailyAgenda->id,
-            'Updated approval and verification status for ' . ($dailyAgenda->student?->user?->name ?? 'Unknown'),
+            'Updated approval, assessment, and verification status for ' . ($dailyAgenda->student?->user?->name ?? 'Unknown'),
             [
                 'previous_company_mentor_approved' => $originalCompanyMentorApproved,
                 'previous_school_teacher_approved' => $originalSchoolTeacherApproved,
                 'previous_completion_status' => $originalCompletionStatus,
+                'previous_daily_assessment' => $dailyAgenda->daily_assessment ?? [],
             ],
             [
                 'company_mentor_approved' => $companyMentorApproved,
                 'school_teacher_approved' => $schoolTeacherApproved,
                 'completion_status' => $completionStatus,
                 'instructor_notes' => $validated['instructor_notes'] ?? null,
+                'daily_assessment' => $dailyAssessment,
                 'updated_by' => $currentUser->name,
             ]
         );
@@ -485,11 +549,11 @@ class DailyAgendaController extends Controller
     public function markComplete(Request $request, DailyAgenda $dailyAgenda)
     {
         $currentUser = Auth::user();
+        $canReviewAgenda = $this->isInstructorOrAdmin();
 
-        // Only instructors and admins can mark as complete
-        if (!$this->isInstructorOrAdmin()) {
+        if (!$canReviewAgenda) {
             return redirect()->route('daily-agenda.show', $dailyAgenda->id)
-                ->with('error', 'Only instructors and admins can mark agendas as complete.');
+                ->with('error', 'Hanya verifikator agenda yang bisa menyetujui atau menolak agenda.');
         }
 
         $validated = $request->validate([
@@ -536,11 +600,11 @@ class DailyAgendaController extends Controller
     public function unmarkComplete(DailyAgenda $dailyAgenda)
     {
         $currentUser = Auth::user();
+        $canReviewAgenda = $this->isInstructorOrAdmin();
 
-        // Only instructors and admins can unmark
-        if (!$this->isInstructorOrAdmin()) {
+        if (!$canReviewAgenda) {
             return redirect()->route('daily-agenda.show', $dailyAgenda->id)
-                ->with('error', 'Only instructors and admins can unmark agendas.');
+                ->with('error', 'Hanya verifikator agenda yang bisa membatalkan verifikasi agenda.');
         }
 
         $previousStatus = $dailyAgenda->completion_status;
@@ -607,10 +671,9 @@ class DailyAgendaController extends Controller
     {
         $currentUser = Auth::user();
 
-        // Only instructors can approve
         if (!$this->isInstructorOrAdmin()) {
             return redirect()->route('daily-agenda.show', $dailyAgenda->id)
-                ->with('error', 'Only instructors and admins can approve agendas.');
+                ->with('error', 'Hanya verifikator agenda yang bisa menyetujui agenda.');
         }
 
         $dailyAgenda->update([
@@ -645,10 +708,9 @@ class DailyAgendaController extends Controller
     {
         $currentUser = Auth::user();
 
-        // Only instructors can approve
         if (!$this->isInstructorOrAdmin()) {
             return redirect()->route('daily-agenda.show', $dailyAgenda->id)
-                ->with('error', 'Only instructors and admins can approve agendas.');
+                ->with('error', 'Hanya verifikator agenda yang bisa menyetujui agenda.');
         }
 
         $dailyAgenda->update([

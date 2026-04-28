@@ -29,7 +29,7 @@
                     <tbody>
                         @foreach ($attendances as $record)
                             <tr style="border-bottom: 1px solid #e5e7eb;">
-                                <td style="padding: 12px;">{{ $record->attendance_date->format('M d, Y') }}</td>
+                                <td style="padding: 12px;">{{ optional($record->attendance_date)->format('M d, Y') ?? 'N/A' }}</td>
                                 <td style="padding: 12px;">{{ $record->check_in_time }}</td>
                                 <td style="padding: 12px;">{{ $record->check_out_time ?? '-' }}</td>
                                 <td style="padding: 12px;">

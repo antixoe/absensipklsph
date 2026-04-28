@@ -3,7 +3,7 @@
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-check-circle-fill" style="margin-right: 8px;"></i>{{ $activity->activity_name }}</h1>
-        <p>{{ $activity->category }} • {{ $activity->activity_date->format('F d, Y') }}</p>
+        <p>{{ $activity->category }} • {{ optional($activity->activity_date)->format('F d, Y') ?? 'N/A' }}</p>
     </div>
 
     <div class="card" style="max-width: 600px; margin: 0 auto;">

@@ -135,8 +135,8 @@
                                     <span style="background: #f0f9ff; color: #082f49; padding: 4px 8px; border-radius: 4px;">{{ $agenda->student?->nim ?? '-' }}</span>
                                 </td>
                                 <td style="padding: 12px; font-size: 14px;">
-                                    <strong>{{ $agenda->agenda_date->format('d/m/Y') }}</strong>
-                                    <br><small style="color: #999;">{{ $agenda->agenda_date->format('l') }}</small>
+                                    <strong>{{ optional($agenda->agenda_date)->format('d/m/Y') ?? 'N/A' }}</strong>
+                                    <br><small style="color: #999;">{{ optional($agenda->agenda_date)->format('l') ?? 'N/A' }}</small>
                                 </td>
                                 <td style="padding: 12px; font-size: 14px; text-align: center;">
                                     <span style="background: #fed7aa; color: #92400e; padding: 4px 8px; border-radius: 4px;">{{ $agenda->time_in ?? '-' }}</span>
@@ -182,14 +182,12 @@
                                                 onmouseout="this.style.background='#f97316'">
                                             <i class="bi bi-eye"></i> Lihat
                                         </button>
-                                        <button type="button"
-                                                onclick="openAgendaEditModal(this)"
-                                                data-agenda='@json($agendaModalData)'
+                                        <a href="{{ route('daily-agenda.edit', $agenda->id) }}"
                                                 style="padding: 6px 12px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;"
                                                 onmouseover="this.style.background='#0369a1'"
                                                 onmouseout="this.style.background='#0284c7'">
                                             <i class="bi bi-pencil-square"></i> Edit Status
-                                        </button>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>

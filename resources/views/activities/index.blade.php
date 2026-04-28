@@ -30,7 +30,7 @@
                             <tr style="border-bottom: 1px solid #e5e7eb;">
                                 <td style="padding: 12px; font-weight: 500;">{{ $activity->name }}</td>
                                 <td style="padding: 12px;">{{ $activity->category }}</td>
-                                <td style="padding: 12px;">{{ $activity->activity_date->format('M d, Y') }}</td>
+                                <td style="padding: 12px;">{{ optional($activity->activity_date)->format('M d, Y') ?? 'N/A' }}</td>
                                 <td style="padding: 12px;">{{ $activity->duration_hours }} hrs</td>
                                 <td style="padding: 12px;">
                                     <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;

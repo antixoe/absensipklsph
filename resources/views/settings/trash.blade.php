@@ -418,8 +418,8 @@
                             <tr>
                                 <td>
                                     <div class="date-cell">
-                                        {{ $log->created_at->format('M d, Y') }}
-                                        <small>{{ $log->created_at->format('H:i:s') }}</small>
+                                        {{ optional($log->created_at)->format('M d, Y') ?? 'N/A' }}
+                                        <small>{{ optional($log->created_at)->format('H:i:s') ?? 'N/A' }}</small>
                                     </div>
                                 </td>
                                 <td>
@@ -444,8 +444,8 @@
                                 </td>
                                 <td>
                                     <div class="deleted-date-cell">
-                                        {{ $log->deleted_at->format('M d, Y H:i:s') }}
-                                        <br><small style="color: #6c757d; font-weight: normal;">{{ $log->deleted_at->diffForHumans() }}</small>
+                                        {{ optional($log->deleted_at)->format('M d, Y H:i:s') ?? 'N/A' }}
+                                        <br><small style="color: #6c757d; font-weight: normal;">{{ optional($log->deleted_at)->diffForHumans() ?? 'N/A' }}</small>
                                     </div>
                                 </td>
                                 <td>

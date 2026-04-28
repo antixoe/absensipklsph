@@ -139,7 +139,8 @@ class User extends Authenticatable
      */
     public function hasRole(string $roleSlug): bool
     {
-        return $this->role && $this->role->name === $roleSlug;
+        return $this->role
+            && $this->normalizeRoleSlug($this->role->name) === $this->normalizeRoleSlug($roleSlug);
     }
 
     /**
@@ -147,6 +148,24 @@ class User extends Authenticatable
      */
     public function hasAnyRole(array $roleSlugs): bool
     {
-        return $this->role && in_array($this->role->name, $roleSlugs);
+        if (!$this->role) {
+            return false;
+        }
+
+        $currentRole = $this->normalizeRoleSlug($this->role->name);
+        $allowedRoles = array_map(fn (string $roleSlug) => $this->normalizeRoleSlug($roleSlug), $roleSlugs);
+
+        return in_array($currentRole, $allowedRoles, true);
+    }
+
+    /**
+     * Normalize role names so access checks are resilient to case and whitespace differences.
+     */
+    private function normalizeRoleSlug(string $roleSlug): string
+    {
+        $normalized = strtolower(trim($roleSlug));
+        $normalized = preg_replace('/[^a-z0-9]+/', '_', $normalized) ?? $normalized;
+
+        return trim($normalized, '_');
     }
 }

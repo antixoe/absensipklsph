@@ -208,7 +208,7 @@
         </div>
 
         <div class="period">
-            <strong>Period:</strong> {{ $startDate->format('M d, Y') }} to {{ $endDate->format('M d, Y') }}
+            <strong>Period:</strong> {{ optional($startDate)->format('M d, Y') ?? 'N/A' }} to {{ optional($endDate)->format('M d, Y') ?? 'N/A' }}
         </div>
 
         <!-- Summary Statistics -->
@@ -248,7 +248,7 @@
             <tbody>
                 @forelse ($absences as $absence)
                     <tr>
-                        <td>{{ $absence->absence_date->format('M d, Y') }}</td>
+                        <td>{{ optional($absence->absence_date)->format('M d, Y') ?? 'N/A' }}</td>
                         <td><strong>{{ $absence->student->user->name ?? 'N/A' }}</strong></td>
                         <td>{{ $absence->student->user->email ?? 'N/A' }}</td>
                         <td>{{ $absence->reason ?? '-' }}</td>

@@ -6,6 +6,17 @@
         <p>Lihat detail agenda dan tanda tangan</p>
     </div>
 
+    @if ($errors->any())
+        <div style="max-width: 1000px; margin: 0 auto 18px auto; padding: 14px 16px; background: #fee2e2; border: 1px solid #ef4444; border-radius: 10px; color: #991b1b; line-height: 1.6;">
+            <strong>Gagal menyimpan perubahan:</strong>
+            <ul style="margin: 8px 0 0 18px; padding: 0;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div style="max-width: 1000px; margin: 0 auto;">
         @php
             $agendaModalData = [
@@ -41,15 +52,13 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Informasi Agenda</h2>
                 <div style="display: flex; gap: 10px;">
-                    @if ($currentUser && in_array($currentUser->role?->name, ['industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']))
-                        <button type="button"
-                           onclick="openAgendaEditModal(this)"
-                           data-agenda='@json($agendaModalData)'
+                    @if ($canReviewAgenda)
+                        <a href="{{ route('daily-agenda.edit', $dailyAgenda->id) }}"
                            style="padding: 10px 15px; background: #0284c7; color: white; border: none; border-radius: 6px; text-decoration: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;"
                            onmouseover="this.style.background='#0369a1'"
                            onmouseout="this.style.background='#0284c7'">
                             <i class="bi bi-pencil-square"></i> Edit Status
-                        </button>
+                        </a>
                     @endif
                     <a href="{{ route('daily-agenda.index') }}" 
                        style="padding: 10px 15px; background: #6b7280; color: white; border: none; border-radius: 6px; text-decoration: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s;"
@@ -60,6 +69,13 @@
                 </div>
             </div>
 
+            @if ($canReviewAgenda)
+                <div style="margin-bottom: 18px; padding: 12px 14px; border-radius: 10px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; font-size: 13px; line-height: 1.6; display: flex; align-items: center; gap: 8px;">
+                    <i class="bi bi-shield-check" style="font-size: 16px;"></i>
+                    <span>Akun Anda memiliki akses verifikator. Gunakan tombol <strong>Edit Status</strong> untuk memperbarui persetujuan dan status PKL.</span>
+                </div>
+            @endif
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <p style="margin: 0; font-size: 13px; color: #999; font-weight: 600; text-transform: uppercase;">Nama Siswa</p>
@@ -67,7 +83,7 @@
                 </div>
                 <div>
                     <p style="margin: 0; font-size: 13px; color: #999; font-weight: 600; text-transform: uppercase;">Tanggal</p>
-                    <p style="margin: 8px 0 0 0; font-size: 16px; font-weight: 600;">{{ $dailyAgenda->agenda_date->format('d/m/Y') }}</p>
+                    <p style="margin: 8px 0 0 0; font-size: 16px; font-weight: 600;">{{ optional($dailyAgenda->agenda_date)->format('d/m/Y') ?? 'N/A' }}</p>
                 </div>
                 <div>
                     <p style="margin: 0; font-size: 13px; color: #999; font-weight: 600; text-transform: uppercase;">Jam Datang</p>
@@ -186,7 +202,7 @@
         <!-- Approval Status Section -->
         <div class="card" style="margin-bottom: 20px; border-left: 4px solid #0284c7;">
             <h3 style="margin: 0 0 20px 0; font-size: 16px; font-weight: 600;">
-                <i class="bi bi-check2-all" style="margin-right: 8px; color: #0284c7;"></i>Status Persetujuan Agenda
+                <i class="bi bi-check2-all" style="margin-right: 8px; color: #0284c7;"></i>Status Persetujuan & Verifikasi Agenda
             </h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
                 
@@ -240,8 +256,8 @@
                             <i class="bi bi-{{ $dailyAgenda->company_mentor_approved ? 'check-circle-fill' : 'circle' }}"></i>
                         </div>
                         <div>
-                            <p style="margin: 0; font-size: 14px; font-weight: 600; color: #333;">Instruktur (Perusahaan)</p>
-                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">Pembimbing Perusahaan</p>
+                            <p style="margin: 0; font-size: 14px; font-weight: 600; color: #333;">Pembimbing Perusahaan</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">Persetujuan dari pembimbing perusahaan</p>
                         </div>
                     </div>
                     
@@ -254,9 +270,9 @@
                         </div>
                     @else
                         @php
-                            $isInstructor = in_array(Auth::user()->role?->name, ['industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']);
+                            $isReviewer = $canReviewAgenda;
                         @endphp
-                        @if ($isInstructor)
+                        @if ($isReviewer)
                             <form method="POST" action="{{ route('daily-agenda.approve-company-mentor', $dailyAgenda->id) }}">
                                 @csrf
                                 <button type="submit" style="width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s;"
@@ -269,7 +285,7 @@
                             <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px;">
                                 <p style="margin: 0; font-size: 13px; color: #92400e;">
                                     <i class="bi bi-info-circle" style="margin-right: 4px;"></i>
-                                    Menunggu persetujuan pembimbing...
+                                    Menunggu persetujuan verifikator...
                                 </p>
                             </div>
                         @endif
@@ -297,9 +313,9 @@
                         </div>
                     @else
                         @php
-                            $isInstructor = in_array(Auth::user()->role?->name, ['industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']);
+                            $isReviewer = $canReviewAgenda;
                         @endphp
-                        @if ($isInstructor)
+                        @if ($isReviewer)
                             <form method="POST" action="{{ route('daily-agenda.approve-school-teacher', $dailyAgenda->id) }}">
                                 @csrf
                                 <button type="submit" style="width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s;"
@@ -312,7 +328,7 @@
                             <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px;">
                                 <p style="margin: 0; font-size: 13px; color: #92400e;">
                                     <i class="bi bi-info-circle" style="margin-right: 4px;"></i>
-                                    Menunggu persetujuan guru...
+                                    Menunggu persetujuan verifikator...
                                 </p>
                             </div>
                         @endif
@@ -327,11 +343,11 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 13px; color: #999;">
                 <div>
                     <p style="margin: 0; font-weight: 600; text-transform: uppercase;">Dibuat</p>
-                    <p style="margin: 8px 0 0 0; font-size: 14px; color: #333;">{{ $dailyAgenda->created_at->format('d/m/Y H:i') }}</p>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; color: #333;">{{ optional($dailyAgenda->created_at)->format('d/m/Y H:i') ?? 'N/A' }}</p>
                 </div>
                 <div>
                     <p style="margin: 0; font-weight: 600; text-transform: uppercase;">Diperbarui</p>
-                    <p style="margin: 8px 0 0 0; font-size: 14px; color: #333;">{{ $dailyAgenda->updated_at->format('d/m/Y H:i') }}</p>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; color: #333;">{{ optional($dailyAgenda->updated_at)->format('d/m/Y H:i') ?? 'N/A' }}</p>
                 </div>
             </div>
         </div>
@@ -344,7 +360,7 @@
             </button>
 
         <!-- Completion Status & Approval Section for Instructors/Admins -->
-        @if ($currentUser && in_array($currentUser->role?->name, ['industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']))
+        @if ($canReviewAgenda)
             <div class="card" style="margin-top: 30px; border-left: 4px solid {{ $dailyAgenda->is_completed && $dailyAgenda->completion_status === 'approved' ? '#10b981' : ($dailyAgenda->is_completed && $dailyAgenda->completion_status === 'rejected' ? '#dc2626' : '#f59e0b') }};">
                 <h3 style="margin: 0 0 20px 0; font-size: 16px; font-weight: 600;">
                     <i class="bi bi-{{ $dailyAgenda->is_completed ? 'check-circle' : 'hourglass-split' }}" style="margin-right: 8px; color: {{ $dailyAgenda->is_completed && $dailyAgenda->completion_status === 'approved' ? '#10b981' : ($dailyAgenda->is_completed && $dailyAgenda->completion_status === 'rejected' ? '#dc2626' : '#f59e0b') }};"></i>Status Verifikasi PKL

@@ -20,7 +20,7 @@
 
         <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
             <div style="font-size: 14px; color: #666; margin-bottom: 10px;">DATE & TIME</div>
-            <div style="font-size: 18px; font-weight: 600; color: #222;">{{ $qrCode->qr_date->format('M d, Y \\a\\t H:i') }}</div>
+            <div style="font-size: 18px; font-weight: 600; color: #222;">{{ optional($qrCode->qr_date)->format('M d, Y \\a\\t H:i') ?? 'N/A' }}</div>
         </div>
 
         <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
@@ -86,7 +86,7 @@
                                 <td style="padding: 12px;">
                                     <small style="background: #f5f5f5; padding: 4px 8px; border-radius: 4px;">{{ $scan->student->nim }}</small>
                                 </td>
-                                <td style="padding: 12px;">{{ $scan->scanned_qr_at->format('M d, Y H:i:s') }}</td>
+                                <td style="padding: 12px;">{{ optional($scan->scanned_qr_at)->format('M d, Y H:i:s') ?? 'N/A' }}</td>
                                 <td style="padding: 12px;">
                                     <small style="color: #666;">{{ $scan->location_name ?? '—' }}</small>
                                 </td>

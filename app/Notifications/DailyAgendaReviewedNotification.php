@@ -40,35 +40,41 @@ class DailyAgendaReviewedNotification extends Notification
     public function toDatabase($notifiable)
     {
         $statusLabel = $this->status === 'approved' ? 'approved' : 'rejected';
+        $statusLabelId = $this->status === 'approved' ? 'disetujui' : 'ditolak';
+        $reviewerRole = match ($this->reviewer->role?->name) {
+            'pembimbing' => 'Pembimbing',
+            'instructor' => 'Instruktur',
+            default => ucfirst(str_replace('_', ' ', (string) $this->reviewer->role?->name)),
+        };
 
         return [
-            'title' => 'Daily Agenda ' . ucfirst($statusLabel),
-            'message' => "Your daily agenda for {$this->dailyAgenda->agenda_date?->format('M d, Y')} was {$statusLabel} by {$this->reviewer->name} ({$this->reviewType}).",
+            'title' => 'Agenda Harian ' . ucfirst($statusLabelId),
+            'message' => "Agenda harian Anda untuk {$this->dailyAgenda->agenda_date?->format('d/m/Y')} {$statusLabelId} oleh {$this->reviewer->name} ({$reviewerRole}).",
             'agenda_id' => $this->dailyAgenda->id,
-            'date' => $this->dailyAgenda->agenda_date?->format('M d, Y'),
-            'agenda_date' => $this->dailyAgenda->agenda_date?->format('M d, Y'),
+            'date' => $this->dailyAgenda->agenda_date?->format('d/m/Y'),
+            'agenda_date' => $this->dailyAgenda->agenda_date?->format('d/m/Y'),
             'review_type' => $this->reviewType,
             'status' => $this->status,
             'reviewer_name' => $this->reviewer->name,
             'reviewer_role' => $this->reviewer->role?->name,
-            'reviewed_at' => now()->format('M d, Y H:i'),
+            'reviewed_at' => now()->format('d/m/Y H:i'),
             'notes' => $this->notes,
         ];
     }
 
     public function toMail($notifiable)
     {
-        $statusLabel = $this->status === 'approved' ? 'Approved' : 'Rejected';
+        $statusLabel = $this->status === 'approved' ? 'Disetujui' : 'Ditolak';
 
         return (new MailMessage)
-            ->subject("Your Daily Agenda Has Been {$statusLabel}")
-            ->greeting("Hello {$notifiable->name},")
-            ->line("Your daily agenda for {$this->dailyAgenda->agenda_date?->format('M d, Y')} was {$statusLabel} by {$this->reviewer->name}.")
-            ->line("Review type: {$this->reviewType}")
+            ->subject("Agenda Harian Anda {$statusLabel}")
+            ->greeting("Halo {$notifiable->name},")
+            ->line("Agenda harian Anda untuk {$this->dailyAgenda->agenda_date?->format('d/m/Y')} telah {$statusLabel} oleh {$this->reviewer->name}.")
+            ->line("Jenis review: {$this->reviewType}")
             ->when($this->notes, function ($message) {
-                return $message->line("Notes: {$this->notes}");
+                return $message->line("Catatan: {$this->notes}");
             })
-            ->action('View Agenda', route('daily-agenda.show', $this->dailyAgenda->id))
-            ->line('Thank you for using the system!');
+            ->action('Lihat Agenda', route('daily-agenda.show', $this->dailyAgenda->id))
+            ->line('Terima kasih telah menggunakan sistem.');
     }
 }

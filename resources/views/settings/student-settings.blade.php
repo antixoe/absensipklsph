@@ -250,8 +250,8 @@
                                     <p style="color: #666; font-size: 12px; margin: 0;">{{ $log->description ?? 'No description' }}</p>
                                 </div>
                                 <div style="text-align: right;">
-                                    <span style="font-size: 12px; color: #666; display: block;">{{ $log->created_at->diffForHumans() }}</span>
-                                    <span style="font-size: 11px; color: #999;">{{ $log->created_at->format('M d, Y H:i') }}</span>
+                                    <span style="font-size: 12px; color: #666; display: block;">{{ optional($log->created_at)->diffForHumans() ?? 'N/A' }}</span>
+                                    <span style="font-size: 11px; color: #999;">{{ optional($log->created_at)->format('M d, Y H:i') ?? 'N/A' }}</span>
                                 </div>
                             </div>
                         @empty

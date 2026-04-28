@@ -4,14 +4,14 @@
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-geo-alt" style="margin-right: 8px;"></i>Attendance Record</h1>
-        <p>{{ $attendance->attendance_date->format('F d, Y') }}</p>
+        <p>{{ optional($attendance->attendance_date)->format('F d, Y') ?? 'N/A' }}</p>
     </div>
 
     <div class="card" style="max-width: 600px; margin: 0 auto;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
             <div>
                 <p style="color: #666; font-size: 14px; margin-bottom: 4px;">Date</p>
-                <p style="font-weight: 600; font-size: 18px;">{{ $attendance->attendance_date->format('M d, Y') }}</p>
+                <p style="font-weight: 600; font-size: 18px;">{{ optional($attendance->attendance_date)->format('M d, Y') ?? 'N/A' }}</p>
             </div>
             <div>
                 <p style="color: #666; font-size: 14px; margin-bottom: 4px;">Status</p>

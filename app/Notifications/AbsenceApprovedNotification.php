@@ -31,14 +31,15 @@ class AbsenceApprovedNotification extends Notification
     {
         $statusLabel = $this->action === 'approved' ? 'Approved' : 'Rejected';
         $statusEmoji = $this->action === 'approved' ? '✅' : '❌';
+        $absenceDate = optional($this->absence->absence_date)->format('M d, Y H:i') ?? 'N/A';
 
         return [
             'title' => "{$statusEmoji} Absence {$statusLabel}",
-            'message' => "Your absence on {$this->absence->absence_date->format('M d, Y H:i')} has been {$this->action}.",
+            'message' => "Your absence on {$absenceDate} has been {$this->action}.",
             'admin_notes' => $this->adminNotes,
             'absence_id' => $this->absence->id,
             'action' => $this->action,
-            'date' => $this->absence->absence_date->format('M d, Y H:i'),
+            'date' => $absenceDate,
         ];
     }
 
@@ -46,11 +47,12 @@ class AbsenceApprovedNotification extends Notification
     {
         $statusLabel = $this->action === 'approved' ? 'Approved' : 'Rejected';
         $statusColor = $this->action === 'approved' ? '#10b981' : '#ef4444';
+        $absenceDate = optional($this->absence->absence_date)->format('M d, Y H:i') ?? 'N/A';
 
         return (new MailMessage)
             ->subject("Your Absence Has Been {$statusLabel}")
             ->greeting("Hello {$notifiable->name},")
-            ->line("Your absence on **{$this->absence->absence_date->format('M d, Y H:i')}** has been **{$statusLabel}**.")
+            ->line("Your absence on **{$absenceDate}** has been **{$statusLabel}**.")
             ->when($this->adminNotes, function ($message) {
                 return $message->line("**Admin Notes:** {$this->adminNotes}");
             })

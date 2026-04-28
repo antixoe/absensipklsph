@@ -46,7 +46,7 @@
                                 <td style="padding: 12px;">
                                     <code style="background: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-family: monospace;">{{ $qr->code }}</code>
                                 </td>
-                                <td style="padding: 12px;">{{ $qr->qr_date->format('M d, Y \\a\\t H:i') }}</td>
+                                <td style="padding: 12px;">{{ optional($qr->qr_date)->format('M d, Y \\a\\t H:i') ?? 'N/A' }}</td>
                                 <td style="padding: 12px;">
                                     <small style="color: #666;">{{ $qr->creator->name }}</small>
                                 </td>

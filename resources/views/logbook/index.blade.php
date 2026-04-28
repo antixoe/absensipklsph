@@ -19,7 +19,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: start;">
                             <div style="flex: 1;">
                                 <h3 style="margin-bottom: 5px; color: #333;">{{ $entry->title }}</h3>
-                                <p style="color: #666; font-size: 14px; margin-bottom: 10px;">{{ $entry->entry_date->format('M d, Y') }} • {{ $entry->hours_worked }} hours</p>
+                                <p style="color: #666; font-size: 14px; margin-bottom: 10px;">{{ optional($entry->entry_date)->format('M d, Y') ?? 'N/A' }} • {{ $entry->hours_worked }} hours</p>
                                 <p style="color: #666; margin-bottom: 10px;">{{ substr($entry->description, 0, 100) }}...</p>
                                 <span style="display: inline-block; padding: 4px 8px; background: 
                                     @if ($entry->status === 'draft') #e5e7eb @elseif ($entry->status === 'submitted') #fef3c7 @else #dcfce7 @endif;

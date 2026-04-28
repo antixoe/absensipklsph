@@ -643,8 +643,8 @@
                             <tr>
                                 <td>
                                     <div class="date-cell">
-                                        {{ $log->created_at->format('M d, Y') }}
-                                        <small>{{ $log->created_at->format('H:i:s') }}</small>
+                                        {{ optional($log->created_at)->format('M d, Y') ?? 'N/A' }}
+                                        <small>{{ optional($log->created_at)->format('H:i:s') ?? 'N/A' }}</small>
                                     </div>
                                 </td>
                                 <td>
@@ -715,7 +715,7 @@
                                                 onclick="showLogDetails(this)" 
                                                 title="View Details"
                                                 data-id="{{ $log->id }}"
-                                                data-date="{{ $log->created_at->format('M d, Y H:i:s') }}"
+                                                data-date="{{ optional($log->created_at)->format('M d, Y H:i:s') ?? 'N/A' }}"
                                                 data-user="{{ $log->user->name ?? 'Unknown' }}"
                                                 data-action="{{ str_replace('_', ' ', ucfirst($log->action)) }}"
                                                 data-location="{{ $log->full_location ?? 'Unknown' }}"
