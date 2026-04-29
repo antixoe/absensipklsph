@@ -20,6 +20,17 @@
         </div>
     @endif
 
+    @if (!empty($isIndustrySupervisor))
+        <div style="padding: 15px 20px; background: {{ !empty($supervisorScope) ? '#eff6ff' : '#fef3c7' }}; border: 2px solid {{ !empty($supervisorScope) ? '#60a5fa' : '#f59e0b' }}; border-radius: 8px; margin-bottom: 20px; color: {{ !empty($supervisorScope) ? '#1e3a8a' : '#92400e' }};">
+            <i class="bi bi-building" style="margin-right: 8px;"></i>
+            @if (!empty($supervisorScope))
+                <strong>Industry scope:</strong> {{ $supervisorScope }}. You can only see agendas from students assigned to this industry.
+            @else
+                <strong>Industry scope not set.</strong> Set this supervisor's department to the industry/company name so agenda filtering can work.
+            @endif
+        </div>
+    @endif
+
     <div class="card" style="margin-bottom: 20px;">
         <h2 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">Filter & Pencarian</h2>
         

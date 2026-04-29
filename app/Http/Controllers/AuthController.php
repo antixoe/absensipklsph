@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Student;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -64,7 +65,11 @@ class AuthController extends Controller
             'department' => ['required_if:role,instructor', 'string'],
         ]);
 
-        $roleId = $validated['role'] === 'student' ? 2 : 3;
+        $roleName = $validated['role'] === 'student'
+            ? Role::STUDENT
+            : Role::INDUSTRY_SUPERVISOR;
+
+        $roleId = Role::resolveByName($roleName)?->id;
 
         $user = User::create([
             'name' => $validated['name'],

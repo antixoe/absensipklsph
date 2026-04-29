@@ -17,12 +17,6 @@
         </div>
     @endif
 
-    @if (session('success'))
-        <div class="alert alert-success">
-            <i class="bi bi-check-circle-fill" style="margin-right: 8px;"></i>{{ session('success') }}
-        </div>
-    @endif
-
     <div class="card">
         <div class="card-title">
             <i class="bi bi-list-check" style="margin-right: 8px;"></i>Assign Features

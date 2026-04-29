@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Absence;
+use App\Models\Role;
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -14,19 +16,144 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 class ReportController extends Controller
 {
     /**
+     * Check if the current user is a homeroom teacher.
+     */
+    private function isHomeroomTeacher(?User $user): bool
+    {
+        return $user?->hasRole(Role::HOMEROOM_TEACHER) ?? false;
+    }
+
+    /**
+     * Get the scope text used to identify the homeroom teacher's class.
+     */
+    private function getHomeroomTeacherScope(?User $user): ?string
+    {
+        if (!$this->isHomeroomTeacher($user)) {
+            return null;
+        }
+
+        $scope = trim((string) ($user?->instructor?->department ?? $user?->instructor?->position ?? ''));
+
+        return $scope !== '' ? $scope : null;
+    }
+
+    /**
+     * Normalize scope text for flexible matching.
+     */
+    private function normalizeScopeText(?string $value): string
+    {
+        $normalized = strtolower(trim((string) $value));
+        $normalized = preg_replace('/[^a-z0-9]+/', ' ', $normalized) ?? $normalized;
+        $normalized = preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
+
+        return trim($normalized);
+    }
+
+    /**
+     * Build a short acronym from a scope string.
+     */
+    private function makeScopeAcronym(string $value): string
+    {
+        $stopWords = [
+            'department',
+            'teacher',
+            'homeroom',
+            'class',
+            'program',
+            'student',
+            'school',
+            'major',
+        ];
+
+        $parts = array_filter(explode(' ', $this->normalizeScopeText($value)));
+        $letters = array_map(function (string $part) use ($stopWords) {
+            return in_array($part, $stopWords, true) ? '' : substr($part, 0, 1);
+        }, $parts);
+
+        return implode('', array_filter($letters));
+    }
+
+    /**
+     * Check whether a teacher scope matches a student class label.
+     */
+    private function scopeMatchesStudentClass(string $scope, ?string $studentClass): bool
+    {
+        $normalizedScope = $this->normalizeScopeText($scope);
+        $normalizedStudentClass = $this->normalizeScopeText($studentClass);
+
+        if ($normalizedScope === '' || $normalizedStudentClass === '') {
+            return false;
+        }
+
+        if ($normalizedScope === $normalizedStudentClass) {
+            return true;
+        }
+
+        if (str_contains($normalizedStudentClass, $normalizedScope) || str_contains($normalizedScope, $normalizedStudentClass)) {
+            return true;
+        }
+
+        $scopeAcronym = $this->makeScopeAcronym($normalizedScope);
+        $studentAcronym = $this->makeScopeAcronym($normalizedStudentClass);
+
+        return $scopeAcronym !== '' && $scopeAcronym === $studentAcronym;
+    }
+
+    /**
+     * Get students allowed for the current homeroom teacher.
+     */
+    private function getHomeroomTeacherStudentIds(?User $user): array
+    {
+        $scope = $this->getHomeroomTeacherScope($user);
+
+        if (!$scope) {
+            return [];
+        }
+
+        return Student::with('user')
+            ->get()
+            ->filter(fn (Student $student) => $this->scopeMatchesStudentClass($scope, $student->major))
+            ->pluck('id')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Apply homeroom teacher restrictions to an absence query.
+     */
+    private function scopeAbsencesForUser($query, ?User $user)
+    {
+        if (!$this->isHomeroomTeacher($user)) {
+            return $query;
+        }
+
+        $studentIds = $this->getHomeroomTeacherStudentIds($user);
+
+        if (empty($studentIds)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('student_id', $studentIds);
+    }
+
+    /**
      * Show reports page with charts and statistics
      */
     public function index()
     {
+        $currentUser = auth()->user();
         $dateRange = request('range', '30'); // Default 30 days
         $startDate = Carbon::now()->subDays($dateRange);
         $endDate = Carbon::now();
+        $isHomeroomTeacher = $this->isHomeroomTeacher($currentUser);
+        $classScope = $this->getHomeroomTeacherScope($currentUser);
+        $classStudentIds = $isHomeroomTeacher ? $this->getHomeroomTeacherStudentIds($currentUser) : [];
 
         // Get absence statistics
-        $absenceStats = $this->getAbsenceStatistics($startDate, $endDate);
-        $absenceByStatus = $this->getAbsenceByStatus($startDate, $endDate);
-        $dailyAbsenceData = $this->getDailyAbsenceData($startDate, $endDate);
-        $approvalRateData = $this->getApprovalRateData($startDate, $endDate);
+        $absenceStats = $this->getAbsenceStatistics($startDate, $endDate, $currentUser);
+        $absenceByStatus = $this->getAbsenceByStatus($startDate, $endDate, $currentUser);
+        $dailyAbsenceData = $this->getDailyAbsenceData($startDate, $endDate, $currentUser);
+        $approvalRateData = $this->getApprovalRateData($startDate, $endDate, $currentUser);
 
         return view('reports.index', compact(
             'absenceStats',
@@ -35,16 +162,22 @@ class ReportController extends Controller
             'approvalRateData',
             'dateRange',
             'startDate',
-            'endDate'
+            'endDate',
+            'classScope',
+            'isHomeroomTeacher',
+            'classStudentIds'
         ));
     }
 
     /**
      * Get overall absence statistics
      */
-    private function getAbsenceStatistics($startDate, $endDate)
+    private function getAbsenceStatistics($startDate, $endDate, ?User $user = null)
     {
-        $absences = Absence::whereBetween('absence_date', [$startDate, $endDate])->get();
+        $absences = $this->scopeAbsencesForUser(
+            Absence::whereBetween('absence_date', [$startDate, $endDate]),
+            $user
+        )->get();
 
         return [
             'total' => $absences->count(),
@@ -60,9 +193,12 @@ class ReportController extends Controller
     /**
      * Get absence count by status for pie chart
      */
-    private function getAbsenceByStatus($startDate, $endDate)
+    private function getAbsenceByStatus($startDate, $endDate, ?User $user = null)
     {
-        $absences = Absence::whereBetween('absence_date', [$startDate, $endDate])->get();
+        $absences = $this->scopeAbsencesForUser(
+            Absence::whereBetween('absence_date', [$startDate, $endDate]),
+            $user
+        )->get();
 
         return [
             'labels' => ['Pending', 'Approved', 'Rejected'],
@@ -79,7 +215,7 @@ class ReportController extends Controller
     /**
      * Get daily absence data for line chart
      */
-    private function getDailyAbsenceData($startDate, $endDate)
+    private function getDailyAbsenceData($startDate, $endDate, ?User $user = null)
     {
         $dates = [];
         $absenceCounts = [];
@@ -88,7 +224,10 @@ class ReportController extends Controller
             $dateStr = $date->format('Y-m-d');
             $dates[] = $date->format('M d');
 
-            $count = Absence::whereDate('absence_date', $dateStr)->count();
+            $count = $this->scopeAbsencesForUser(
+                Absence::whereDate('absence_date', $dateStr),
+                $user
+            )->count();
             $absenceCounts[] = $count;
         }
 
@@ -101,9 +240,12 @@ class ReportController extends Controller
     /**
      * Get approval rate data
      */
-    private function getApprovalRateData($startDate, $endDate)
+    private function getApprovalRateData($startDate, $endDate, ?User $user = null)
     {
-        $absences = Absence::whereBetween('absence_date', [$startDate, $endDate])->get();
+        $absences = $this->scopeAbsencesForUser(
+            Absence::whereBetween('absence_date', [$startDate, $endDate]),
+            $user
+        )->get();
 
         $approved = $absences->where('status', 'approved')->count();
         $rejected = $absences->where('status', 'rejected')->count();
@@ -120,24 +262,32 @@ class ReportController extends Controller
      */
     public function exportExcel(Request $request)
     {
+        $currentUser = auth()->user();
         $dateRange = $request->get('range', '30');
         $startDate = Carbon::now()->subDays($dateRange);
         $endDate = Carbon::now();
+        $isHomeroomTeacher = $this->isHomeroomTeacher($currentUser);
+        $classScope = $this->getHomeroomTeacherScope($currentUser);
 
         // Get data
-        $absences = Absence::whereBetween('absence_date', [$startDate, $endDate])
+        $absences = $this->scopeAbsencesForUser(
+            Absence::whereBetween('absence_date', [$startDate, $endDate]),
+            $currentUser
+        )
             ->with('student')
             ->orderBy('absence_date', 'desc')
             ->get();
 
-        $absenceStats = $this->getAbsenceStatistics($startDate, $endDate);
+        $absenceStats = $this->getAbsenceStatistics($startDate, $endDate, $currentUser);
 
         // Create spreadsheet
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
         // Set title
-        $sheet->setCellValue('A1', 'Absence Report');
+        $sheet->setCellValue('A1', $isHomeroomTeacher && $classScope
+            ? 'Absence Report - ' . $classScope
+            : 'Absence Report');
         $sheet->mergeCells('A1:F1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -212,23 +362,29 @@ class ReportController extends Controller
      */
     public function exportPdf(Request $request)
     {
+        $currentUser = auth()->user();
         $dateRange = $request->get('range', '30');
         $startDate = Carbon::now()->subDays($dateRange);
         $endDate = Carbon::now();
+        $classScope = $this->getHomeroomTeacherScope($currentUser);
 
         // Get data
-        $absences = Absence::whereBetween('absence_date', [$startDate, $endDate])
+        $absences = $this->scopeAbsencesForUser(
+            Absence::whereBetween('absence_date', [$startDate, $endDate]),
+            $currentUser
+        )
             ->with('student')
             ->orderBy('absence_date', 'desc')
             ->get();
 
-        $absenceStats = $this->getAbsenceStatistics($startDate, $endDate);
+        $absenceStats = $this->getAbsenceStatistics($startDate, $endDate, $currentUser);
 
         return view('reports.pdf', compact(
             'absenceStats',
             'absences',
             'startDate',
-            'endDate'
+            'endDate',
+            'classScope'
         ));
     }
 
@@ -237,23 +393,29 @@ class ReportController extends Controller
      */
     public function printReport(Request $request)
     {
+        $currentUser = auth()->user();
         $dateRange = $request->get('range', '30');
         $startDate = Carbon::now()->subDays($dateRange);
         $endDate = Carbon::now();
+        $classScope = $this->getHomeroomTeacherScope($currentUser);
 
         // Get data
-        $absences = Absence::whereBetween('absence_date', [$startDate, $endDate])
+        $absences = $this->scopeAbsencesForUser(
+            Absence::whereBetween('absence_date', [$startDate, $endDate]),
+            $currentUser
+        )
             ->with('student')
             ->orderBy('absence_date', 'desc')
             ->get();
 
-        $absenceStats = $this->getAbsenceStatistics($startDate, $endDate);
+        $absenceStats = $this->getAbsenceStatistics($startDate, $endDate, $currentUser);
 
         return view('reports.print', compact(
             'absenceStats',
             'absences',
             'startDate',
-            'endDate'
+            'endDate',
+            'classScope'
         ));
     }
 }

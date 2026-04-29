@@ -163,9 +163,6 @@ class User extends Authenticatable
      */
     private function normalizeRoleSlug(string $roleSlug): string
     {
-        $normalized = strtolower(trim($roleSlug));
-        $normalized = preg_replace('/[^a-z0-9]+/', '_', $normalized) ?? $normalized;
-
-        return trim($normalized, '_');
+        return Role::normalizeRoleName($roleSlug);
     }
 }

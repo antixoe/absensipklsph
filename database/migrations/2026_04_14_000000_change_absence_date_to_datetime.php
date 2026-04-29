@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -16,7 +17,20 @@ return new class extends Migration
         });
 
         // Copy existing date data to new datetime column
-        DB::statement('UPDATE absences SET absence_date_time = CONCAT(absence_date, " 00:00:00")');
+        DB::table('absences')
+            ->select('id', 'absence_date')
+            ->orderBy('id')
+            ->chunkById(100, function ($absences) {
+                foreach ($absences as $absence) {
+                    DB::table('absences')
+                        ->where('id', $absence->id)
+                        ->update([
+                            'absence_date_time' => $absence->absence_date
+                                ? \Carbon\Carbon::parse($absence->absence_date)->startOfDay()
+                                : null,
+                        ]);
+                }
+            });
 
         // Drop the old column
         Schema::table('absences', function (Blueprint $table) {
@@ -39,7 +53,20 @@ return new class extends Migration
         });
 
         // Copy existing datetime data to date column
-        DB::statement('UPDATE absences SET absence_date_time = DATE(absence_date)');
+        DB::table('absences')
+            ->select('id', 'absence_date')
+            ->orderBy('id')
+            ->chunkById(100, function ($absences) {
+                foreach ($absences as $absence) {
+                    DB::table('absences')
+                        ->where('id', $absence->id)
+                        ->update([
+                            'absence_date_time' => $absence->absence_date
+                                ? \Carbon\Carbon::parse($absence->absence_date)->toDateString()
+                                : null,
+                        ]);
+                }
+            });
 
         // Drop the old column
         Schema::table('absences', function (Blueprint $table) {

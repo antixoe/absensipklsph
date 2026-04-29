@@ -4,8 +4,30 @@
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-bar-chart" style="margin-right: 8px;"></i>Absence Reports</h1>
-        <p>Analytics and statistics on student absences</p>
+        <p>
+            Analytics and statistics on student absences
+            @if(!empty($isHomeroomTeacher) && !empty($classScope))
+                for {{ $classScope }}
+            @endif
+        </p>
     </div>
+
+    @if(!empty($isHomeroomTeacher))
+        <div class="card" style="margin-bottom: 20px; background: {{ !empty($classScope) ? '#eff6ff' : '#fef3c7' }}; border-left: 4px solid {{ !empty($classScope) ? '#3b82f6' : '#f59e0b' }};">
+            <strong>
+                @if(!empty($classScope))
+                    Class scope:
+                @else
+                    Class scope not set:
+                @endif
+            </strong>
+            @if(!empty($classScope))
+                You are viewing absence reports only for students that match your assigned class.
+            @else
+                This homeroom teacher account does not have a class scope yet, so the report is empty until the class mapping is configured.
+            @endif
+        </div>
+    @endif
 
     <!-- Date Range Filter -->
     <div class="card" style="margin-bottom: 20px;">

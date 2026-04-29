@@ -12,35 +12,81 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Core roles for RBAC system
-        Role::firstOrCreate(
-            ['name' => 'admin'],
-            ['description' => 'Super Administrator - Full system access']
-        );
+        $roles = [
+            [
+                'name' => Role::ADMIN,
+                'description' => 'Administrator - akses penuh ke sistem',
+                'aliases' => ['admin', 'administrator', 'administrator_sistem'],
+            ],
+            [
+                'name' => Role::STUDENT,
+                'description' => 'Siswa - absen, logbook, dan agenda harian',
+                'aliases' => ['student', 'siswa', 'murid'],
+            ],
+            [
+                'name' => Role::INDUSTRY_SUPERVISOR,
+                'description' => 'Pembimbing PKL - validasi absensi dan logbook siswa',
+                'aliases' => ['industry_supervisor', 'pembimbing_pkl', 'pembimbing_perusahaan', 'pembimbing_industri'],
+            ],
+            [
+                'name' => Role::SCHOOL_SUPERVISOR,
+                'description' => 'Pembimbing Sekolah - memantau dan membimbing siswa',
+                'aliases' => ['pembimbing_sekolah', 'guru_pembimbing', 'guru_pembimbing_sekolah'],
+            ],
+            [
+                'name' => Role::HEAD_OF_DEPARTMENT,
+                'description' => 'Kepala Jurusan - memantau laporan dan review berkala',
+                'aliases' => ['head_of_department', 'kepala_jurusan', 'ketua_jurusan'],
+            ],
+            [
+                'name' => Role::HOMEROOM_TEACHER,
+                'description' => 'Wali Kelas - melihat data dan laporan kelas',
+                'aliases' => ['homeroom_teacher', 'wali_kelas', 'walikelas'],
+            ],
+            [
+                'name' => Role::SCHOOL_PRINCIPAL,
+                'description' => 'Kepala Sekolah - melihat seluruh data sekolah',
+                'aliases' => ['school_principal', 'kepala_sekolah'],
+            ],
+            [
+                'name' => Role::STUDENT_AFFAIRS,
+                'description' => 'Kesiswaan - memantau data dan laporan siswa',
+                'aliases' => ['kesiswaan', 'student_affairs'],
+            ],
+        ];
 
-        Role::firstOrCreate(
-            ['name' => 'student'],
-            ['description' => 'Student - Can check-in/out and fill logbooks']
-        );
+        foreach ($roles as $roleData) {
+            $this->upsertRole($roleData['name'], $roleData['description'], $roleData['aliases']);
+        }
+    }
 
-        Role::firstOrCreate(
-            ['name' => 'industry_supervisor'],
-            ['description' => 'Industry Supervisor - Validates attendance and logbooks']
-        );
+    /**
+     * Create or normalize a role record by canonical name.
+     */
+    private function upsertRole(string $canonicalName, string $description, array $aliases): void
+    {
+        $role = Role::resolveByName($canonicalName);
 
-        Role::firstOrCreate(
-            ['name' => 'head_of_department'],
-            ['description' => 'Head of Department - Reviews weekly logbooks']
-        );
+        if (!$role) {
+            foreach ($aliases as $alias) {
+                $role = Role::resolveByName($alias);
+                if ($role) {
+                    break;
+                }
+            }
+        }
 
-        Role::firstOrCreate(
-            ['name' => 'homeroom_teacher'],
-            ['description' => 'Homeroom Teacher - Views class data']
-        );
+        if ($role) {
+            $role->update([
+                'name' => $canonicalName,
+                'description' => $description,
+            ]);
+            return;
+        }
 
-        Role::firstOrCreate(
-            ['name' => 'school_principal'],
-            ['description' => 'School Principal - Views all school data']
-        );
+        Role::create([
+            'name' => $canonicalName,
+            'description' => $description,
+        ]);
     }
 }

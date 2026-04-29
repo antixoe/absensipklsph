@@ -10,6 +10,7 @@ use App\Models\Absence;
 use App\Notifications\DailyAgendaReviewedNotification;
 use App\Notifications\DailyAgendaSubmittedNotification;
 use App\Services\ActivityLoggerService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -53,10 +54,98 @@ class DailyAgendaController extends Controller
      */
     private function normalizeRoleName(string $roleName): string
     {
-        $normalized = strtolower(trim($roleName));
-        $normalized = preg_replace('/[^a-z0-9]+/', '_', $normalized) ?? $normalized;
+        return Role::normalizeRoleName($roleName);
+    }
 
-        return trim($normalized, '_');
+    /**
+     * Check if the current user is an industry supervisor.
+     */
+    private function isIndustrySupervisor(?User $user): bool
+    {
+        if (!$user?->role) {
+            return false;
+        }
+
+        return $this->normalizeRoleName($user->role->name) === $this->normalizeRoleName(Role::INDUSTRY_SUPERVISOR);
+    }
+
+    /**
+     * Get the industry/placement scope for the current supervisor.
+     */
+    private function getIndustrySupervisorScope(?User $user): ?string
+    {
+        if (!$this->isIndustrySupervisor($user)) {
+            return null;
+        }
+
+        $scope = trim((string) ($user?->instructor?->department ?? ''));
+
+        return $scope !== '' ? $scope : null;
+    }
+
+    /**
+     * Normalize placement values so comparisons are stable.
+     */
+    private function normalizePlacement(?string $value): string
+    {
+        $normalized = strtolower(trim((string) $value));
+        $normalized = preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
+
+        return trim($normalized);
+    }
+
+    /**
+     * Check whether an agenda belongs to the same industry as the supervisor.
+     */
+    private function agendaMatchesSupervisorScope(?User $user, DailyAgenda $dailyAgenda): bool
+    {
+        if (!$this->isIndustrySupervisor($user)) {
+            return true;
+        }
+
+        $supervisorScope = $this->getIndustrySupervisorScope($user);
+        $studentScope = $this->normalizePlacement($dailyAgenda->student?->company_placement);
+
+        return $supervisorScope !== null
+            && $studentScope !== ''
+            && $supervisorScope === $studentScope;
+    }
+
+    /**
+     * Redirect if an industry supervisor tries to access another industry's agenda.
+     */
+    private function redirectIfOutsideSupervisorScope(?User $user, DailyAgenda $dailyAgenda): ?RedirectResponse
+    {
+        if ($this->agendaMatchesSupervisorScope($user, $dailyAgenda)) {
+            return null;
+        }
+
+        return redirect()->route('daily-agenda.index')
+            ->with('error', 'Industry supervisors can only access agendas from their own industry.');
+    }
+
+    /**
+     * Apply the industry supervisor scope to an agenda query.
+     */
+    private function applySupervisorScopeToAgendaQuery($query, string $scope)
+    {
+        return $query->whereHas('student', function ($studentQuery) use ($scope) {
+            $studentQuery->whereRaw(
+                "LOWER(TRIM(COALESCE(company_placement, ''))) = ?",
+                [$scope]
+            );
+        });
+    }
+
+    /**
+     * Apply the industry supervisor scope to the student list.
+     */
+    private function applySupervisorScopeToStudentQuery($query, string $scope)
+    {
+        return $query->whereRaw(
+            "LOWER(TRIM(COALESCE(company_placement, ''))) = ?",
+            [$scope]
+        );
     }
 
     /**
@@ -89,12 +178,36 @@ class DailyAgendaController extends Controller
     }
 
     /**
+     * Get users who should be notified when a student submits a daily agenda.
+     */
+    private function agendaReviewerUsersForStudent(Student $student)
+    {
+        $studentScope = $this->normalizePlacement($student->company_placement);
+
+        return User::with(['role', 'instructor'])
+            ->get()
+            ->filter(function (User $user) use ($studentScope) {
+                if (!$this->isAgendaReviewer($user)) {
+                    return false;
+                }
+
+                if (!$this->isIndustrySupervisor($user)) {
+                    return true;
+                }
+
+                $supervisorScope = $this->normalizePlacement($this->getIndustrySupervisorScope($user));
+
+                return $supervisorScope !== '' && $supervisorScope === $studentScope;
+            });
+    }
+
+    /**
      * Notify mentors/teachers/admins about a new agenda submission.
      */
     private function notifyAgendaSubmitted(DailyAgenda $dailyAgenda, Student $student): void
     {
         try {
-            foreach ($this->agendaReviewerUsers() as $recipient) {
+            foreach ($this->agendaReviewerUsersForStudent($student) as $recipient) {
                 $recipient->notify(new DailyAgendaSubmittedNotification($dailyAgenda, $student->user));
             }
         } catch (\Throwable $e) {
@@ -178,10 +291,20 @@ class DailyAgendaController extends Controller
     {
         $currentUser = Auth::user();
         $canReviewAgenda ??= $this->isInstructorOrAdmin();
+        $supervisorScope = $this->getIndustrySupervisorScope($currentUser);
+        $isIndustrySupervisor = $this->isIndustrySupervisor($currentUser);
         
         // Get all agendas with student information, ordered by date
         $agendasQuery = DailyAgenda::with(['student.user', 'completedBy'])
             ->orderByDesc('agenda_date');
+
+        if ($isIndustrySupervisor) {
+            if ($supervisorScope) {
+                $this->applySupervisorScopeToAgendaQuery($agendasQuery, $this->normalizePlacement($supervisorScope));
+            } else {
+                $agendasQuery->whereRaw('1 = 0');
+            }
+        }
 
         // Optionally filter by date range
         if (request('date_from')) {
@@ -199,9 +322,26 @@ class DailyAgendaController extends Controller
         $agendas = $agendasQuery->paginate(15);
         
         // Get list of students for filter dropdown
-        $students = Student::with('user')->orderBy('user_id')->get();
+        $studentsQuery = Student::with('user')->orderBy('user_id');
 
-        return view('daily-agenda.index-instructor', compact('agendas', 'students', 'currentUser', 'canReviewAgenda'));
+        if ($isIndustrySupervisor) {
+            if ($supervisorScope) {
+                $this->applySupervisorScopeToStudentQuery($studentsQuery, $this->normalizePlacement($supervisorScope));
+            } else {
+                $studentsQuery->whereRaw('1 = 0');
+            }
+        }
+
+        $students = $studentsQuery->get();
+
+        return view('daily-agenda.index-instructor', compact(
+            'agendas',
+            'students',
+            'currentUser',
+            'canReviewAgenda',
+            'supervisorScope',
+            'isIndustrySupervisor'
+        ));
     }
 
     /**
@@ -395,6 +535,10 @@ class DailyAgendaController extends Controller
         
         // Check if user can review agendas
         if ($canReviewAgenda) {
+            if ($redirect = $this->redirectIfOutsideSupervisorScope($currentUser, $dailyAgenda)) {
+                return $redirect;
+            }
+
             // Reviewers can view any agenda
             return view('daily-agenda.show', compact('dailyAgenda', 'currentUser', 'canReviewAgenda'));
         }
@@ -424,6 +568,10 @@ class DailyAgendaController extends Controller
                 ->with('error', 'Hanya verifikator agenda yang bisa mengubah status agenda.');
         }
 
+        if ($redirect = $this->redirectIfOutsideSupervisorScope($currentUser, $dailyAgenda)) {
+            return $redirect;
+        }
+
         $dailyAgenda->load(['student.user', 'completedBy']);
 
         return view('daily-agenda.edit', compact('dailyAgenda', 'currentUser', 'canReviewAgenda'));
@@ -440,6 +588,10 @@ class DailyAgendaController extends Controller
         if (!$canReviewAgenda) {
             return redirect()->route('daily-agenda.show', $dailyAgenda->id)
                 ->with('error', 'Hanya verifikator agenda yang bisa mengubah status agenda.');
+        }
+
+        if ($redirect = $this->redirectIfOutsideSupervisorScope($currentUser, $dailyAgenda)) {
+            return $redirect;
         }
 
         $validated = $request->validate([
@@ -556,6 +708,10 @@ class DailyAgendaController extends Controller
                 ->with('error', 'Hanya verifikator agenda yang bisa menyetujui atau menolak agenda.');
         }
 
+        if ($redirect = $this->redirectIfOutsideSupervisorScope($currentUser, $dailyAgenda)) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'completion_status' => 'required|in:approved,rejected',
             'instructor_notes' => 'nullable|string|max:1000',
@@ -605,6 +761,10 @@ class DailyAgendaController extends Controller
         if (!$canReviewAgenda) {
             return redirect()->route('daily-agenda.show', $dailyAgenda->id)
                 ->with('error', 'Hanya verifikator agenda yang bisa membatalkan verifikasi agenda.');
+        }
+
+        if ($redirect = $this->redirectIfOutsideSupervisorScope($currentUser, $dailyAgenda)) {
+            return $redirect;
         }
 
         $previousStatus = $dailyAgenda->completion_status;
@@ -676,6 +836,10 @@ class DailyAgendaController extends Controller
                 ->with('error', 'Hanya verifikator agenda yang bisa menyetujui agenda.');
         }
 
+        if ($redirect = $this->redirectIfOutsideSupervisorScope($currentUser, $dailyAgenda)) {
+            return $redirect;
+        }
+
         $dailyAgenda->update([
             'company_mentor_approved' => true,
             'company_mentor_approved_at' => now(),
@@ -711,6 +875,10 @@ class DailyAgendaController extends Controller
         if (!$this->isInstructorOrAdmin()) {
             return redirect()->route('daily-agenda.show', $dailyAgenda->id)
                 ->with('error', 'Hanya verifikator agenda yang bisa menyetujui agenda.');
+        }
+
+        if ($redirect = $this->redirectIfOutsideSupervisorScope($currentUser, $dailyAgenda)) {
+            return $redirect;
         }
 
         $dailyAgenda->update([

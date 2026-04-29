@@ -6,12 +6,6 @@
         <p>Configure role access permissions</p>
     </div>
 
-    @if (session('success'))
-        <div class="alert alert-success">
-            <i class="bi bi-check-circle-fill" style="margin-right: 8px;"></i>{{ session('success') }}
-        </div>
-    @endif
-
     <div class="card">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span><i class="bi bi-people" style="margin-right: 8px;"></i>Roles & Permissions</span>
@@ -55,7 +49,7 @@
                                 <a href="{{ route('admin.roles.edit', $role) }}" class="btn" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">
                                     <i class="bi bi-pencil-square" style="margin-right: 5px;"></i>Edit
                                 </a>
-                                @unless(in_array($role->name, ['student', 'pembimbing', 'pembimbing_perusahaan', 'guru_pembimbing', 'guru_pembimbing_sekolah', 'industry_supervisor', 'head_of_department', 'homeroom_teacher', 'school_principal', 'admin']))
+                                @unless($role->isSystemRole())
                                     <button type="button" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="confirmDelete('{{ $role->name }}', '{{ route('admin.roles.destroy', $role) }}')">
                                         <i class="bi bi-trash" style="margin-right: 5px;"></i>Delete
                                     </button>

@@ -72,9 +72,10 @@ class AbsenceController extends Controller
         
         try {
             if ($isQRSubmission) {
-                // QR code submission doesn't require selfie
+                // QR code submission - selfie is optional but may be included
                 $validated = $request->validate([
                     'qr_code' => 'required|string',
+                    'selfie' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                     'latitude' => 'nullable|numeric',
                     'longitude' => 'nullable|numeric',
                     'ip_address' => 'nullable|string',
@@ -126,8 +127,8 @@ class AbsenceController extends Controller
                 $alreadyExists = true;
             }
 
-            // Store the selfie image (only for selfie submissions)
-            if (!$isQRSubmission && $request->hasFile('selfie')) {
+            // Store the selfie image if provided
+            if ($request->hasFile('selfie')) {
                 $file = $request->file('selfie');
                 $selfieFilename = 'selfie_' . time() . '.' . $file->getClientOriginalExtension();
                 $file->storeAs('absences', $selfieFilename, 'public');
@@ -148,6 +149,10 @@ class AbsenceController extends Controller
                 if ($isQRSubmission) {
                     $updateData['qr_code'] = $validated['qr_code'] ?? null;
                     $updateData['scanned_qr_at'] = Carbon::now();
+                    // Also store selfie if provided with QR submission
+                    if ($selfieFilename) {
+                        $updateData['selfie_path'] = 'absences/' . $selfieFilename;
+                    }
                 } else {
                     $updateData['selfie_path'] = $selfieFilename ? 'absences/' . $selfieFilename : null;
                 }
@@ -167,7 +172,7 @@ class AbsenceController extends Controller
                     'student_id' => $studentId,
                     'student_name' => $currentUserStudent->user->name ?? 'Unknown',
                     'qr_code_used' => $isQRSubmission ? ($validated['qr_code'] ?? 'N/A') : 'N/A',
-                    'selfie_saved' => !$isQRSubmission && $selfieFilename ? true : false,
+                    'selfie_saved' => $selfieFilename ? true : false,
                     'location_name' => $validated['location_name'] ?? 'Not provided',
                     'ip_address' => $validated['ip_address'] ?? 'Not provided',
                     'latitude' => $validated['latitude'] ?? null,

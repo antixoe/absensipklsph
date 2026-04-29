@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\Instructor;
 use App\Models\InternshipProgram;
+use App\Models\Role;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -23,6 +24,10 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleSeeder::class);
         $this->call(RoleFeatureSeeder::class);
 
+        $adminRoleId = Role::resolveByName(Role::ADMIN)?->id;
+        $studentRoleId = Role::resolveByName(Role::STUDENT)?->id;
+        $supervisorRoleId = Role::resolveByName(Role::INDUSTRY_SUPERVISOR)?->id;
+
         // Create admin user if it doesn't exist
         User::firstOrCreate(
             ['email' => 'admin@example.com'],
@@ -30,7 +35,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Admin',
                 'password' => Hash::make('admin123'),
                 'status' => 'active',
-                'role_id' => 1, // Admin role
+                'role_id' => $adminRoleId,
             ]
         );
 
@@ -46,7 +51,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'John Student',
                 'password' => Hash::make('password123'),
-                'role_id' => 2, // Student role
+                'role_id' => $studentRoleId,
             ]
         );
 
@@ -67,7 +72,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Jane Instructor',
                 'password' => Hash::make('password123'),
-                'role_id' => 3, // Instructor role
+                'role_id' => $supervisorRoleId,
             ]
         );
 
@@ -96,7 +101,7 @@ class DatabaseSeeder extends Seeder
                     'name' => 'Student ' . ($index + 2),
                     'password' => Hash::make('password123'),
                     'status' => 'active',
-                    'role_id' => 2, // Student role
+                    'role_id' => $studentRoleId,
                 ]
             );
 

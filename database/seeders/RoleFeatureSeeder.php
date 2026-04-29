@@ -48,6 +48,11 @@ class RoleFeatureSeeder extends Seeder
                 'provide_guidance',
                 'view_reports',
             ],
+            Role::SCHOOL_SUPERVISOR => [
+                'provide_guidance',
+                'class_filter',
+                'view_reports',
+            ],
             Role::HEAD_OF_DEPARTMENT => [
                 'weekly_review',
                 'department_filter',
@@ -59,6 +64,11 @@ class RoleFeatureSeeder extends Seeder
             ],
             Role::SCHOOL_PRINCIPAL => [
                 'view_all_data',
+                'view_reports',
+            ],
+            Role::STUDENT_AFFAIRS => [
+                'view_all_data',
+                'class_filter',
                 'view_reports',
             ],
             Role::ADMIN => [

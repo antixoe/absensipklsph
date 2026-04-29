@@ -71,13 +71,7 @@ class UsersImport
                 }
 
                 // Get or create role
-                $role = Role::where('name', $role_name)->first();
-                if (!$role) {
-                    $role = Role::where('slug', $role_name)->first();
-                }
-                if (!$role) {
-                    $role = Role::first(); // Use first role as default
-                }
+                $role = Role::resolveByName($role_name) ?? Role::first(); // Use first role as default
 
                 // Create user
                 $user = User::create([

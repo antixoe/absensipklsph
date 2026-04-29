@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Instructor;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -32,7 +33,7 @@ class AuthController extends \Illuminate\Routing\Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-            'role_id' => 2, // Assuming 2 is student role
+            'role_id' => Role::resolveByName(Role::STUDENT)?->id,
         ]);
 
         Student::create([
@@ -72,7 +73,7 @@ class AuthController extends \Illuminate\Routing\Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-            'role_id' => 3, // Assuming 3 is instructor role
+            'role_id' => Role::resolveByName(Role::INDUSTRY_SUPERVISOR)?->id,
         ]);
 
         Instructor::create([

@@ -540,11 +540,19 @@
             <i class="bi bi-check-circle-fill" style="margin-right: 8px;"></i>
             <strong>You have already marked your attendance today</strong>
             <p style="margin: 8px 0 0 0; font-size: 14px;">
-                Scanned at: {{ optional($todayAbsence->scanned_qr_at)->format('H:i:s') ?? 'N/A' }}
+                <i class="bi bi-box-arrow-in-right" style="margin-right: 5px;"></i>
+                <strong>Jam Masuk (Check-in):</strong> {{ optional($todayAbsence->scanned_qr_at)->format('H:i:s') ?? 'N/A' }}
             </p>
-            <p style="margin: 6px 0 0 0; font-size: 13px;">
-                Scan the same QR code again at jam pulang to save checkout automatically.
-            </p>
+            @if($todayAbsence->scanned_qr_out_at)
+                <p style="margin: 6px 0 0 0; font-size: 14px;">
+                    <i class="bi bi-box-arrow-out-right" style="margin-right: 5px;"></i>
+                    <strong>Jam Pulang (Check-out):</strong> {{ $todayAbsence->scanned_qr_out_at->format('H:i:s') }}
+                </p>
+            @else
+                <p style="margin: 6px 0 0 0; font-size: 13px;">
+                    Scan the same QR code again at jam pulang to save checkout automatically.
+                </p>
+            @endif
         </div>
     @elseif(!$todayQRCodes)
         <div style="padding: 15px 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; margin-bottom: 20px; color: #92400e;">

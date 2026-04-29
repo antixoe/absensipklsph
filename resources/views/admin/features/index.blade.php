@@ -6,12 +6,6 @@
         <p>Enable or disable features in the system</p>
     </div>
 
-    @if (session('success'))
-        <div class="alert alert-success">
-            <i class="bi bi-check-circle-fill" style="margin-right: 8px;"></i>{{ session('success') }}
-        </div>
-    @endif
-
     <div class="card">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span><i class="bi bi-gear" style="margin-right: 8px;"></i>System Features</span>
