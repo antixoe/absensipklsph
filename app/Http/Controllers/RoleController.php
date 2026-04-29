@@ -127,11 +127,11 @@ class RoleController extends Controller
                 ->with('error', 'Cannot delete role. ' . $role->users()->count() . ' user(s) are assigned to this role.');
         }
 
-        $roleName = ucfirst(str_replace('_', ' ', $role->name));
+        $roleName = Role::displayName($role->name);
         $role->delete();
 
         return redirect()->route('admin.roles')
-            ->with('success', 'Role "' . $roleName . '" deleted successfully!');
+            ->with('success', 'Peran "' . $roleName . '" berhasil dihapus!');
     }
 
     /**

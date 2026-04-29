@@ -63,7 +63,7 @@
                             <td style="padding: 15px; color: #666;">{{ $user->email }}</td>
                             <td style="padding: 15px;">
                                 <span style="display: inline-block; padding: 4px 12px; background-color: #e0e7ff; color: #4c1d95; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                                    {{ $user->role->name ?? 'N/A' }}
+                                    {{ \App\Models\Role::displayName($user->role->name ?? 'N/A') }}
                                 </span>
                             </td>
                             <td style="padding: 15px; color: #666; font-size: 14px;">

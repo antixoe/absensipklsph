@@ -62,6 +62,26 @@ class Role extends Model
     }
 
     /**
+     * Get a display label for a role name using Indonesian labels where possible.
+     */
+    public static function displayName(string $roleName): string
+    {
+        $canonical = self::normalizeRoleName($roleName);
+
+        return match ($canonical) {
+            self::ADMIN => 'Admin',
+            self::STUDENT => 'Siswa',
+            self::INDUSTRY_SUPERVISOR => 'Pembimbing PKL',
+            self::HEAD_OF_DEPARTMENT => 'Kepala Jurusan',
+            self::HOMEROOM_TEACHER => 'Wali Kelas',
+            self::SCHOOL_PRINCIPAL => 'Kepala Sekolah',
+            self::SCHOOL_SUPERVISOR => 'Pembimbing Sekolah',
+            self::STUDENT_AFFAIRS => 'Kesiswaan',
+            default => ucwords(str_replace('_', ' ', $canonical)),
+        };
+    }
+
+    /**
      * Canonical role names that should be treated as system roles.
      */
     public static function systemRoleNames(): array

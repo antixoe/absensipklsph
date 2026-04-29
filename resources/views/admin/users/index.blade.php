@@ -51,7 +51,7 @@
                         <option value="">All Roles</option>
                         @foreach ($roles as $role)
                             <option value="{{ $role->id }}" {{ request('role') == $role->id ? 'selected' : '' }}>
-                                {{ ucfirst(str_replace('_', ' ', $role->name)) }}
+                                {{ \App\Models\Role::displayName($role->name) }}
                             </option>
                         @endforeach
                     </select>
@@ -111,7 +111,7 @@
                 " 
                 onmouseover="this.style.borderColor='#d97706'; this.style.boxShadow='0 2px 8px rgba(217, 119, 6, 0.25)';" 
                 onmouseout="this.style.borderColor='#f59e0b'; this.style.boxShadow='0 2px 6px rgba(245, 158, 11, 0.15)';">
-                    <option value="" style="color: #9ca3af;">-- Select Action --</option>
+                    <option value="" style="color: #9ca3af;">-- Pilih Aksi --</option>
                     <option value="activate" style="color: #10b981;">✓ Activate</option>
                     <option value="deactivate" style="color: #ef4444;">✗ Deactivate</option>
                     <option value="change_role" style="color: #3b82f6;">⚙ Change Role</option>
@@ -139,9 +139,9 @@
                 " 
                 onmouseover="this.style.borderColor='#2563eb'; this.style.boxShadow='0 2px 8px rgba(37, 99, 235, 0.25)';" 
                 onmouseout="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 2px 6px rgba(59, 130, 246, 0.15)';">
-                    <option value="" style="color: #9ca3af;">-- Select Role --</option>
+                    <option value="" style="color: #9ca3af;">-- Pilih Peran --</option>
                     @foreach ($roles as $role)
-                        <option value="{{ $role->id }}" style="color: #3b82f6;">{{ ucfirst(str_replace('_', ' ', $role->name)) }}</option>
+                        <option value="{{ $role->id }}" style="color: #3b82f6;">{{ \App\Models\Role::displayName($role->name) }}</option>
                     @endforeach
                 </select>
 
@@ -215,7 +215,7 @@
                             <td style="padding: 12px;">{{ $user->phone ?? '-' }}</td>
                             <td style="padding: 12px;">
                                 <span style="display: inline-block; background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
-                                    {{ ucfirst(str_replace('_', ' ', $user->role->name ?? 'N/A')) }}
+                                    {{ \App\Models\Role::displayName($user->role->name ?? 'N/A') }}
                                 </span>
                             </td>
                             <td style="padding: 12px; text-align: center;">
@@ -344,7 +344,7 @@
 
             <!-- Modal Footer -->
             <div id="modalFooter" style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" style="padding: 10px 16px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="closeActionModal()">Cancel</button>
+                <button type="button" style="padding: 10px 16px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="closeActionModal()">Batal</button>
                 <button type="button" id="modalActionBtn" style="padding: 10px 16px; background: #f97316; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">Confirm</button>
             </div>
         </div>
@@ -436,7 +436,7 @@
                             const user = data.user;
                             const roles = data.roles;
                             
-                            let rolesOptions = '<option value="">Select a role</option>';
+                            let rolesOptions = '<option value="">Pilih peran</option>';
                             roles.forEach(role => {
                                 const selected = role.id == user.role_id ? 'selected' : '';
                                 rolesOptions += `<option value="${role.id}" ${selected}>${role.name}</option>`;
@@ -600,7 +600,7 @@
                 .then(data => {
                     if (data.success) {
                         const roles = data.roles;
-                        let rolesOptions = '<option value="">Select a role</option>';
+                        let rolesOptions = '<option value="">Pilih peran</option>';
                         roles.forEach(role => {
                             rolesOptions += `<option value="${role.id}">${role.name}</option>`;
                         });

@@ -151,7 +151,7 @@
             <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 4px;">
                 <p style="color: #92400e; font-size: 12px; margin: 0;">
                     <i class="bi bi-info-circle" style="margin-right: 5px;"></i>
-                    <strong>Tip:</strong> If no password is provided, users will be created with a default password "password"
+                    <strong>Tip:</strong> Jika tidak ada password, user akan dibuat dengan password default "password"
                 </p>
             </div>
         </div>
@@ -159,16 +159,16 @@
 
     <!-- Tips Section -->
     <div class="card">
-        <h2 style="margin-bottom: 20px;"><i class="bi bi-lightbulb" style="margin-right: 8px;"></i>Import Tips</h2>
+        <h2 style="margin-bottom: 20px;"><i class="bi bi-lightbulb" style="margin-right: 8px;"></i>Tips Import</h2>
 
         <ul style="color: #666; line-height: 1.8;">
-            <li><strong>Duplicate Prevention:</strong> Users with duplicate emails will be skipped automatically</li>
-            <li><strong>Role Names:</strong> Use exact role names (e.g., "student", "instructor", "admin")</li>
-            <li><strong>Headers Required:</strong> The first row must contain column headers</li>
-            <li><strong>Default Password:</strong> Users created without a password will use "password" as default</li>
-            <li><strong>Student Profiles:</strong> If `role` is `student`, optional `nim`, `school`, `major`, `student_phone`, and `student_status` columns will be saved to the student profile</li>
-            <li><strong>Validation:</strong> Email addresses are validated during import</li>
-            <li><strong>Status Default:</strong> If not specified, status defaults to "active"</li>
+            <li><strong>Pencegahan Duplikat:</strong> User dengan email duplikat akan dilewati otomatis</li>
+            <li><strong>Nama Peran:</strong> Gunakan nama peran yang sesuai (misalnya, "siswa", "pembimbing_pkl", "admin")</li>
+            <li><strong>Header Wajib:</strong> Baris pertama harus berisi judul kolom</li>
+            <li><strong>Password Default:</strong> User yang dibuat tanpa password akan memakai "password"</li>
+            <li><strong>Profil Siswa:</strong> Jika `role` bernilai `siswa`, kolom opsional `nim`, `school`, `major`, `student_phone`, dan `student_status` akan disimpan ke profil siswa</li>
+            <li><strong>Validasi:</strong> Alamat email divalidasi saat import</li>
+            <li><strong>Status Default:</strong> Jika tidak disebutkan, status default adalah "active"</li>
         </ul>
     </div>
 

@@ -3,18 +3,18 @@
 @section('content')
     <div class="page-header">
         <h1><i class="bi bi-shield-lock" style="margin-right: 8px;"></i>Manage Roles & Features</h1>
-        <p>Configure role access permissions</p>
+        <p>Atur hak akses peran pengguna</p>
     </div>
 
     <div class="card">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-            <span><i class="bi bi-people" style="margin-right: 8px;"></i>Roles & Permissions</span>
+            <span><i class="bi bi-people" style="margin-right: 8px;"></i>Peran & Izin</span>
             <div style="display: flex; gap: 10px;">
                 <button type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;" onclick="openCreateModal()">
-                    <i class="bi bi-plus-circle" style="margin-right: 5px;"></i>Create Role
+                    <i class="bi bi-plus-circle" style="margin-right: 5px;"></i>Tambah Peran
                 </button>
                 <a href="{{ route('admin.features') }}" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;">
-                    <i class="bi bi-sliders" style="margin-right: 5px;"></i>Manage Features
+                    <i class="bi bi-sliders" style="margin-right: 5px;"></i>Kelola Fitur
                 </a>
             </div>
         </div>
@@ -23,16 +23,16 @@
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
-                        <th style="padding: 12px; text-align: left;">Role</th>
-                        <th style="padding: 12px; text-align: left;">Description</th>
-                        <th style="padding: 12px; text-align: left;">Features Assigned</th>
-                        <th style="padding: 12px; text-align: center;">Actions</th>
+                        <th style="padding: 12px; text-align: left;">Peran</th>
+                        <th style="padding: 12px; text-align: left;">Deskripsi</th>
+                        <th style="padding: 12px; text-align: left;">Fitur Tertaut</th>
+                        <th style="padding: 12px; text-align: center;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($roles as $role)
                         <tr style="border-bottom: 1px solid #e5e7eb;">
-                            <td style="padding: 12px; font-weight: 600;">{{ ucfirst(str_replace('_', ' ', $role->name)) }}</td>
+                            <td style="padding: 12px; font-weight: 600;">{{ \App\Models\Role::displayName($role->name) }}</td>
                             <td style="padding: 12px; color: #666;">{{ $role->description ?? 'N/A' }}</td>
                             <td style="padding: 12px;">
                                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
@@ -41,7 +41,7 @@
                                             {{ $feature->name }}
                                         </span>
                                     @empty
-                                        <span style="color: #999;">No features assigned</span>
+                                        <span style="color: #999;">Belum ada fitur</span>
                                     @endforelse
                                 </div>
                             </td>
@@ -50,7 +50,7 @@
                                     <i class="bi bi-pencil-square" style="margin-right: 5px;"></i>Edit
                                 </a>
                                 @unless($role->isSystemRole())
-                                    <button type="button" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="confirmDelete('{{ $role->name }}', '{{ route('admin.roles.destroy', $role) }}')">
+                                    <button type="button" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="confirmDelete('{{ \App\Models\Role::displayName($role->name) }}', '{{ route('admin.roles.destroy', $role) }}')">
                                         <i class="bi bi-trash" style="margin-right: 5px;"></i>Delete
                                     </button>
                                 @endunless
@@ -66,7 +66,7 @@
     <div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
             <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; font-size: 18px; color: #1f2937;">Delete Role</h3>
+                <h3 style="margin: 0; font-size: 18px; color: #1f2937;">Hapus Peran</h3>
                 <button type="button" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;" onclick="closeDeleteModal()">×</button>
             </div>
 
@@ -75,16 +75,16 @@
                     <i class="bi bi-exclamation-circle" style="font-size: 48px; color: #991b1b;"></i>
                 </div>
                 <p style="margin: 0 0 10px 0; font-size: 16px; color: #1f2937; text-align: center;">
-                    Are you sure you want to delete the <strong id="deleteRoleName"></strong> role?
+                    Apakah Anda yakin ingin menghapus peran <strong id="deleteRoleName"></strong>?
                 </p>
                 <p style="font-size: 13px; color: #6b7280; margin: 10px 0; text-align: center;">
-                    This action cannot be undone.
+                    Tindakan ini tidak dapat dibatalkan.
                 </p>
             </div>
 
             <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" style="padding: 10px 16px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="closeDeleteModal()">Cancel</button>
-                <button type="button" id="deleteConfirmBtn" style="padding: 10px 16px; background: #991b1b; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="submitDelete()">Delete Role</button>
+                <button type="button" style="padding: 10px 16px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="closeDeleteModal()">Batal</button>
+                <button type="button" id="deleteConfirmBtn" style="padding: 10px 16px; background: #991b1b; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="submitDelete()">Hapus Peran</button>
             </div>
         </div>
     </div>
@@ -149,7 +149,7 @@
         <div style="background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 90%; max-width: 600px; margin: 20px auto;">
             <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="margin: 0; font-size: 18px; color: #1f2937;">
-                    <i class="bi bi-plus-circle" style="margin-right: 8px;"></i>Create New Role
+                    <i class="bi bi-plus-circle" style="margin-right: 8px;"></i>Tambah Peran Baru
                 </h3>
                 <button type="button" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;" onclick="closeCreateModal()">×</button>
             </div>
@@ -159,33 +159,33 @@
 
                 <div style="margin-bottom: 20px;">
                     <label for="modal_name" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
-                        Role Name <span style="color: red;">*</span>
+                        Nama Peran <span style="color: red;">*</span>
                     </label>
-                    <input type="text" id="modal_name" name="name" placeholder="e.g., supervisor, coordinator" 
+                    <input type="text" id="modal_name" name="name" placeholder="contoh: pembimbing_pkl, kepala_jurusan" 
                            style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" 
                            required>
-                    <span style="color: #999; font-size: 12px; display: block; margin-top: 5px;">Use lowercase and underscores (e.g., field_supervisor)</span>
+                    <span style="color: #999; font-size: 12px; display: block; margin-top: 5px;">Gunakan huruf kecil dan garis bawah, misalnya `pembimbing_pkl`.</span>
                 </div>
 
                 <div style="margin-bottom: 20px;">
                     <label for="modal_description" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
-                        Description <span style="color: #999; font-size: 11px;">(optional)</span>
+                        Deskripsi <span style="color: #999; font-size: 11px;">(opsional)</span>
                     </label>
-                    <textarea id="modal_description" name="description" rows="3" placeholder="Enter role description..." 
+                    <textarea id="modal_description" name="description" rows="3" placeholder="Masukkan deskripsi peran..." 
                               style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
                 </div>
 
                 <div style="background: #f9fafb; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; border-left: 3px solid #93c5fd;">
                     <p style="margin: 0; color: #666; font-size: 12px;">
                         <i class="bi bi-lightbulb" style="margin-right: 5px;"></i>
-                        You can assign features now or later when editing the role.
+                        Fitur bisa ditentukan sekarang atau nanti saat mengubah peran.
                     </p>
                 </div>
 
                 <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #e5e7eb; padding-top: 20px;">
-                    <button type="button" style="padding: 10px 16px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="closeCreateModal()">Cancel</button>
+                    <button type="button" style="padding: 10px 16px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="closeCreateModal()">Batal</button>
                     <button type="submit" style="padding: 10px 16px; background: #0369a1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
-                        <i class="bi bi-check-lg" style="margin-right: 5px;"></i>Create Role
+                        <i class="bi bi-check-lg" style="margin-right: 5px;"></i>Simpan Peran
                     </button>
                 </div>
             </form>
@@ -218,13 +218,13 @@
     </script>
 
     <div style="margin-top: 30px;">
-        <h2 style="margin-bottom: 20px;"><i class="bi bi-info-circle" style="margin-right: 8px;"></i>Role Definitions</h2>
+        <h2 style="margin-bottom: 20px;"><i class="bi bi-info-circle" style="margin-right: 8px;"></i>Definisi Peran</h2>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
             <!-- Student -->
             <div class="card" style="background: #f0fdf4;">
                 <h3 style="color: #166534; margin-bottom: 10px;">
-                    <i class="bi bi-mortarboard" style="margin-right: 5px;"></i>Student
+                    <i class="bi bi-mortarboard" style="margin-right: 5px;"></i>Siswa
                 </h3>
                 <p style="color: #166534; font-size: 14px; line-height: 1.6;">
                     • Check-in/Check-out functionality<br>
@@ -236,7 +236,7 @@
             <!-- Industry Supervisor -->
             <div class="card" style="background: #fef3c7;">
                 <h3 style="color: #92400e; margin-bottom: 10px;">
-                    <i class="bi bi-person-check" style="margin-right: 5px;"></i>Industry Supervisor
+                    <i class="bi bi-person-check" style="margin-right: 5px;"></i>Pembimbing PKL
                 </h3>
                 <p style="color: #92400e; font-size: 14px; line-height: 1.6;">
                     • Validate student attendance<br>
@@ -248,7 +248,7 @@
             <!-- Head of Department -->
             <div class="card" style="background: #ddd6fe;">
                 <h3 style="color: #5b21b6; margin-bottom: 10px;">
-                    <i class="bi bi-briefcase" style="margin-right: 5px;"></i>Head of Department
+                    <i class="bi bi-briefcase" style="margin-right: 5px;"></i>Kepala Jurusan
                 </h3>
                 <p style="color: #5b21b6; font-size: 14px; line-height: 1.6;">
                     • Weekly logbook review<br>
@@ -260,7 +260,7 @@
             <!-- Homeroom Teacher -->
             <div class="card" style="background: #fee2e2;">
                 <h3 style="color: #991b1b; margin-bottom: 10px;">
-                    <i class="bi bi-book" style="margin-right: 5px;"></i>Homeroom Teacher
+                    <i class="bi bi-book" style="margin-right: 5px;"></i>Wali Kelas
                 </h3>
                 <p style="color: #991b1b; font-size: 14px; line-height: 1.6;">
                     • View student class data<br>
@@ -272,7 +272,7 @@
             <!-- Principal -->
             <div class="card" style="background: #f0f9ff;">
                 <h3 style="color: #0c4a6e; margin-bottom: 10px;">
-                    <i class="bi bi-building" style="margin-right: 5px;"></i>School Principal
+                    <i class="bi bi-building" style="margin-right: 5px;"></i>Kepala Sekolah
                 </h3>
                 <p style="color: #0c4a6e; font-size: 14px; line-height: 1.6;">
                     • View all school data<br>

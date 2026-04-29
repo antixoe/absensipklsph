@@ -85,10 +85,10 @@
                     Role <span style="color: red;">*</span>
                 </label>
                 <select id="role_id" name="role_id" class="form-control" required>
-                    <option value="">Select a role</option>
+                    <option value="">Pilih peran</option>
                     @foreach ($roles as $role)
                         <option value="{{ $role->id }}" {{ old('role_id', $user->role_id) == $role->id ? 'selected' : '' }}>
-                            {{ ucfirst(str_replace('_', ' ', $role->name)) }}
+                            {{ \App\Models\Role::displayName($role->name) }}
                         </option>
                     @endforeach
                 </select>
@@ -111,7 +111,7 @@
                     <i class="bi bi-check-circle" style="margin-right: 5px;"></i>Update User
                 </button>
                 <a href="{{ route('admin.users') }}" class="btn btn-secondary" style="flex: 1; padding: 10px; text-align: center;">
-                    <i class="bi bi-x-circle" style="margin-right: 5px;"></i>Cancel
+                    <i class="bi bi-x-circle" style="margin-right: 5px;"></i>Batal
                 </a>
             </div>
         </form>

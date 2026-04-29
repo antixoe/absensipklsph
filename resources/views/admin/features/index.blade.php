@@ -2,13 +2,13 @@
 
 @section('content')
     <div class="page-header">
-        <h1><i class="bi bi-sliders" style="margin-right: 8px;"></i>Manage Features</h1>
-        <p>Enable or disable features in the system</p>
+        <h1><i class="bi bi-sliders" style="margin-right: 8px;"></i>Kelola Fitur</h1>
+        <p>Aktifkan atau nonaktifkan fitur di dalam sistem</p>
     </div>
 
     <div class="card">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-            <span><i class="bi bi-gear" style="margin-right: 8px;"></i>System Features</span>
+            <span><i class="bi bi-gear" style="margin-right: 8px;"></i>Fitur Sistem</span>
             <a href="{{ route('admin.roles') }}" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;">
                 <i class="bi bi-people" style="margin-right: 5px;"></i>Back to Roles
             </a>
@@ -18,11 +18,11 @@
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
-                        <th style="padding: 12px; text-align: left;">Feature</th>
+                        <th style="padding: 12px; text-align: left;">Fitur</th>
                         <th style="padding: 12px; text-align: left;">Slug</th>
-                        <th style="padding: 12px; text-align: left;">Description</th>
+                        <th style="padding: 12px; text-align: left;">Deskripsi</th>
                         <th style="padding: 12px; text-align: center;">Status</th>
-                        <th style="padding: 12px; text-align: center;">Action</th>
+                        <th style="padding: 12px; text-align: center;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -34,11 +34,11 @@
                             <td style="padding: 12px; text-align: center;">
                                 @if ($feature->is_active)
                                     <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-                                        <i class="bi bi-check-circle-fill" style="margin-right: 5px;"></i>Active
+                                        <i class="bi bi-check-circle-fill" style="margin-right: 5px;"></i>Aktif
                                     </span>
                                 @else
                                     <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-                                        <i class="bi bi-x-circle-fill" style="margin-right: 5px;"></i>Inactive
+                                        <i class="bi bi-x-circle-fill" style="margin-right: 5px;"></i>Nonaktif
                                     </span>
                                 @endif
                             </td>
@@ -47,9 +47,9 @@
                                     @csrf
                                     <button type="submit" class="btn" style="padding: 6px 12px; font-size: 12px;">
                                         @if ($feature->is_active)
-                                            <i class="bi bi-toggle-on" style="margin-right: 5px;"></i>Disable
+                                            <i class="bi bi-toggle-on" style="margin-right: 5px;"></i>Nonaktifkan
                                         @else
-                                            <i class="bi bi-toggle-off" style="margin-right: 5px;"></i>Enable
+                                            <i class="bi bi-toggle-off" style="margin-right: 5px;"></i>Aktifkan
                                         @endif
                                     </button>
                                 </form>
@@ -63,13 +63,13 @@
 
     <!-- Feature Categories Info -->
     <div style="margin-top: 30px;">
-        <h2 style="margin-bottom: 20px;"><i class="bi bi-info-circle" style="margin-right: 8px;"></i>Feature Categories</h2>
+        <h2 style="margin-bottom: 20px;"><i class="bi bi-info-circle" style="margin-right: 8px;"></i>Kategori Fitur</h2>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
             <!-- Student Features -->
             <div style="border-left: 4px solid #166534; padding: 20px; background: #f0fdf4; border-radius: 8px;">
                 <h3 style="margin-top: 0; color: #166534;">
-                    <i class="bi bi-mortarboard" style="margin-right: 8px;"></i>Student Features
+                    <i class="bi bi-mortarboard" style="margin-right: 8px;"></i>Fitur Siswa
                 </h3>
                 <ul style="margin: 0; padding-left: 20px; color: #166534;">
                     <li>Check-in/Check-out</li>
@@ -81,7 +81,7 @@
             <!-- Supervisor Features -->
             <div style="border-left: 4px solid #92400e; padding: 20px; background: #fef3c7; border-radius: 8px;">
                 <h3 style="margin-top: 0; color: #92400e;">
-                    <i class="bi bi-person-check" style="margin-right: 8px;"></i>Supervisor Features
+                    <i class="bi bi-person-check" style="margin-right: 8px;"></i>Fitur Pembimbing
                 </h3>
                 <ul style="margin: 0; padding-left: 20px; color: #92400e;">
                     <li>Validate Attendance</li>
@@ -93,7 +93,7 @@
             <!-- Management Features -->
             <div style="border-left: 4px solid #4338ca; padding: 20px; background: #e0e7ff; border-radius: 8px;">
                 <h3 style="margin-top: 0; color: #4338ca;">
-                    <i class="bi bi-shield-lock" style="margin-right: 8px;"></i>Management Features
+                    <i class="bi bi-shield-lock" style="margin-right: 8px;"></i>Fitur Manajemen
                 </h3>
                 <ul style="margin: 0; padding-left: 20px; color: #4338ca;">
                     <li>Manage Roles</li>
@@ -105,7 +105,7 @@
             <!-- Administrative Features -->
             <div style="border-left: 4px solid #5b21b6; padding: 20px; background: #ddd6fe; border-radius: 8px;">
                 <h3 style="margin-top: 0; color: #5b21b6;">
-                    <i class="bi bi-graph-up" style="margin-right: 8px;"></i>Administrative Features
+                    <i class="bi bi-graph-up" style="margin-right: 8px;"></i>Fitur Administratif
                 </h3>
                 <ul style="margin: 0; padding-left: 20px; color: #5b21b6;">
                     <li>View All Data</li>
@@ -117,7 +117,7 @@
             <!-- Filtering Features -->
             <div style="border-left: 4px solid #991b1b; padding: 20px; background: #fee2e2; border-radius: 8px;">
                 <h3 style="margin-top: 0; color: #991b1b;">
-                    <i class="bi bi-funnel" style="margin-right: 8px;"></i>Filtering Features
+                    <i class="bi bi-funnel" style="margin-right: 8px;"></i>Fitur Penyaring
                 </h3>
                 <ul style="margin: 0; padding-left: 20px; color: #991b1b;">
                     <li>Department Filter</li>
@@ -128,7 +128,7 @@
             <!-- Reporting Features -->
             <div style="border-left: 4px solid #0369a1; padding: 20px; background: #e0f2fe; border-radius: 8px;">
                 <h3 style="margin-top: 0; color: #0369a1;">
-                    <i class="bi bi-bar-chart" style="margin-right: 8px;"></i>Reporting
+                    <i class="bi bi-bar-chart" style="margin-right: 8px;"></i>Laporan
                 </h3>
                 <ul style="margin: 0; padding-left: 20px; color: #0369a1;">
                     <li>View and generate reports</li>
@@ -140,8 +140,8 @@
 
     <!-- Usage Instructions -->
     <div class="card" style="margin-top: 30px; background: #f0f9ff;">
-        <h3 style="margin-top: 0; color: #0c4a6e;">
-            <i class="bi bi-question-circle" style="margin-right: 8px;"></i>How to Use
+            <h3 style="margin-top: 0; color: #0c4a6e;">
+            <i class="bi bi-question-circle" style="margin-right: 8px;"></i>Cara Menggunakan
         </h3>
         <ol style="color: #0c4a6e; line-height: 1.8;">
             <li><strong>Toggle Feature Status:</strong> Use the toggle buttons above to enable or disable features system-wide.</li>

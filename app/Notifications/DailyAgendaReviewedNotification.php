@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\DailyAgenda;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -41,11 +42,7 @@ class DailyAgendaReviewedNotification extends Notification
     {
         $statusLabel = $this->status === 'approved' ? 'approved' : 'rejected';
         $statusLabelId = $this->status === 'approved' ? 'disetujui' : 'ditolak';
-        $reviewerRole = match ($this->reviewer->role?->name) {
-            'pembimbing' => 'Pembimbing',
-            'instructor' => 'Instruktur',
-            default => ucfirst(str_replace('_', ' ', (string) $this->reviewer->role?->name)),
-        };
+        $reviewerRole = Role::displayName((string) ($this->reviewer->role?->name ?? 'N/A'));
 
         return [
             'title' => 'Agenda Harian ' . ucfirst($statusLabelId),
@@ -56,7 +53,7 @@ class DailyAgendaReviewedNotification extends Notification
             'review_type' => $this->reviewType,
             'status' => $this->status,
             'reviewer_name' => $this->reviewer->name,
-            'reviewer_role' => $this->reviewer->role?->name,
+            'reviewer_role' => $reviewerRole,
             'reviewed_at' => now()->format('d/m/Y H:i'),
             'notes' => $this->notes,
         ];

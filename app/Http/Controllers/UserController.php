@@ -330,7 +330,7 @@ class UserController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone ?? '-',
                 'address' => $user->address,
-                'role' => ucfirst(str_replace('_', ' ', $user->role->name ?? 'N/A')),
+                'role' => Role::displayName($user->role->name ?? 'N/A'),
                 'status' => $user->status,
                 'created_at' => $user->created_at->format('M d, Y H:i'),
                 'updated_at' => $user->updated_at->format('M d, Y H:i'),
@@ -363,7 +363,7 @@ class UserController extends Controller
             ],
             'roles' => $roles->map(fn($role) => [
                 'id' => $role->id,
-                'name' => ucfirst(str_replace('_', ' ', $role->name))
+                'name' => Role::displayName($role->name)
             ])
         ]);
     }
@@ -383,7 +383,7 @@ class UserController extends Controller
             'success' => true,
             'roles' => $roles->map(fn($role) => [
                 'id' => $role->id,
-                'name' => ucfirst(str_replace('_', ' ', $role->name))
+                'name' => Role::displayName($role->name)
             ])
         ]);
     }

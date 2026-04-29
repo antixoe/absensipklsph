@@ -303,11 +303,11 @@
             @csrf
 
             <!-- Role Selection -->
-            <label style="display: block; margin-bottom: 15px; font-weight: 600;">Select Role</label>
+            <label style="display: block; margin-bottom: 15px; font-weight: 600;">Pilih Peran</label>
             <div class="role-selector">
                 <div class="role-option">
                     <input type="radio" id="student" name="role" value="student" checked onchange="toggleRole()">
-                    <label for="student"><i class="bi bi-mortarboard" style="margin-right: 5px;"></i>Student</label>
+                    <label for="student"><i class="bi bi-mortarboard" style="margin-right: 5px;"></i>Siswa</label>
                 </div>
                 <div class="role-option">
                     <input type="radio" id="instructor" name="role" value="instructor" onchange="toggleRole()">

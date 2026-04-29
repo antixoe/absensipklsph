@@ -33,7 +33,7 @@
                 <label style="display: block; margin-bottom: 5px; color: #666; font-size: 12px; font-weight: 600;">Role</label>
                 <p>
                     <span style="display: inline-block; background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
-                        {{ ucfirst(str_replace('_', ' ', $user->role->name ?? 'N/A')) }}
+                        {{ \App\Models\Role::displayName($user->role->name ?? 'N/A') }}
                     </span>
                 </p>
             </div>
