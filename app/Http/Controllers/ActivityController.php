@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Activity;
+use App\Models\Absensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class ActivityController extends Controller
+class AbsensiController extends Controller
 {
     public function index()
     {
@@ -15,16 +15,16 @@ class ActivityController extends Controller
             abort(403, 'Student profile not found');
         }
 
-        $activities = Activity::where('student_id', $student->id)
-            ->orderBy('activity_date', 'desc')
+        $absensis = Absensi::where('student_id', $student->id)
+            ->orderBy('tanggal_absensi', 'desc')
             ->paginate(10);
         
-        return view('activities.index', compact('activities'));
+        return view('absensis.index', compact('absensis'));
     }
 
     public function create()
     {
-        return view('activities.create');
+        return view('absensis.create');
     }
 
     public function store(Request $request)
@@ -35,89 +35,77 @@ class ActivityController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:2000'],
-            'date' => ['required', 'date'],
-            'category' => ['required', 'string', 'max:100'],
-            'duration_hours' => ['required', 'numeric', 'min:0', 'max:24'],
+            'tanggal_absensi' => ['required', 'date'],
+            'jam_masuk' => ['nullable', 'date_format:H:i'],
+            'jam_keluar' => ['nullable', 'date_format:H:i'],
+            'status' => ['required', 'string', 'in:hadir,alpa,izin,sakit'],
+            'keterangan' => ['nullable', 'string', 'max:500'],
         ]);
 
-        Activity::create([
+        Absensi::create([
             'student_id' => $student->id,
-            'activity_name' => $validated['name'],
-            'description' => $validated['description'],
-            'activity_date' => $validated['date'],
-            'category' => $validated['category'],
-            'duration_hours' => $validated['duration_hours'],
-            'status' => 'pending',
+            'tanggal_absensi' => $validated['tanggal_absensi'],
+            'jam_masuk' => $validated['jam_masuk'],
+            'jam_keluar' => $validated['jam_keluar'],
+            'status' => $validated['status'],
+            'keterangan' => $validated['keterangan'],
         ]);
 
-        return redirect('/activities')->with('success', 'Activity created successfully!');
+        return redirect('/absensis')->with('success', 'Absensi berhasil dibuat!');
     }
 
-    public function show(Activity $activity)
+    public function show(Absensi $absensi)
     {
         $student = Auth::user()->student;
-        if ($activity->student_id !== $student->id) {
+        if ($absensi->student_id !== $student->id) {
             abort(403);
         }
-        return view('activities.show', compact('activity'));
+        return view('absensis.show', compact('absensi'));
     }
 
-    public function edit(Activity $activity)
+    public function edit(Absensi $absensi)
     {
         $student = Auth::user()->student;
-        if ($activity->student_id !== $student->id) {
+        if ($absensi->student_id !== $student->id) {
             abort(403);
         }
-        return view('activities.edit', compact('activity'));
+        return view('absensis.edit', compact('absensi'));
     }
 
-    public function update(Request $request, Activity $activity)
+    public function update(Request $request, Absensi $absensi)
     {
         $student = Auth::user()->student;
-        if ($activity->student_id !== $student->id) {
+        if ($absensi->student_id !== $student->id) {
             abort(403);
         }
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:2000'],
-            'date' => ['required', 'date'],
-            'category' => ['required', 'string', 'max:100'],
-            'duration_hours' => ['required', 'numeric', 'min:0', 'max:24'],
+            'tanggal_absensi' => ['required', 'date'],
+            'jam_masuk' => ['nullable', 'date_format:H:i'],
+            'jam_keluar' => ['nullable', 'date_format:H:i'],
+            'status' => ['required', 'string', 'in:hadir,alpa,izin,sakit'],
+            'keterangan' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $activity->update([
-            'activity_name' => $validated['name'],
-            'description' => $validated['description'],
-            'activity_date' => $validated['date'],
-            'category' => $validated['category'],
-            'duration_hours' => $validated['duration_hours'],
+        $absensi->update([
+            'tanggal_absensi' => $validated['tanggal_absensi'],
+            'jam_masuk' => $validated['jam_masuk'],
+            'jam_keluar' => $validated['jam_keluar'],
+            'status' => $validated['status'],
+            'keterangan' => $validated['keterangan'],
         ]);
 
-        return redirect('/activities')->with('success', 'Activity updated successfully!');
+        return redirect('/absensis')->with('success', 'Absensi berhasil diperbarui!');
     }
 
-    public function destroy(Activity $activity)
+    public function destroy(Absensi $absensi)
     {
         $student = Auth::user()->student;
-        if ($activity->student_id !== $student->id) {
+        if ($absensi->student_id !== $student->id) {
             abort(403);
         }
 
-        $activity->delete();
-        return redirect('/activities')->with('success', 'Activity deleted successfully!');
-    }
-
-    public function complete(Activity $activity)
-    {
-        $student = Auth::user()->student;
-        if ($activity->student_id !== $student->id) {
-            abort(403);
-        }
-
-        $activity->update(['status' => 'completed']);
-        return redirect('/activities')->with('success', 'Activity marked as completed!');
+        $absensi->delete();
+        return redirect('/absensis')->with('success', 'Absensi berhasil dihapus!');
     }
 }

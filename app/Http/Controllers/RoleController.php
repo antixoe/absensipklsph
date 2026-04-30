@@ -6,6 +6,8 @@ use App\Models\Role;
 use App\Models\Feature;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
@@ -80,10 +82,8 @@ class RoleController extends Controller
             abort(403);
         }
 
-        $features = Feature::all();
-        $selectedFeatures = $role->features()->pluck('features.id')->toArray();
-
-        return view('admin.roles.edit', compact('role', 'features', 'selectedFeatures'));
+        return redirect()->route('admin.roles')
+            ->with('open_edit_role_id', $role->id);
     }
 
     /**
@@ -96,13 +96,32 @@ class RoleController extends Controller
             abort(403);
         }
 
-        $featureIds = $request->input('features', []);
-        
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:255', Rule::unique('roles', 'name')->ignore($role->id)],
+            'description' => ['nullable', 'string', 'max:500'],
+            'features' => ['array'],
+            'features.*' => ['exists:features,id'],
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('admin.roles')
+                ->withErrors($validator)
+                ->withInput()
+                ->with('open_edit_role_id', $role->id);
+        }
+
+        $validated = $validator->validated();
+
+        $role->update([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
         // Sync features (attach new ones, detach removed ones)
-        $role->features()->sync($featureIds);
+        $role->features()->sync($validated['features'] ?? []);
 
         return redirect()->route('admin.roles')
-            ->with('success', 'Role permissions updated successfully!');
+            ->with('success', 'Role updated successfully!');
     }
 
     /**
@@ -113,12 +132,6 @@ class RoleController extends Controller
         // Only admin can manage roles
         if (!Auth::user() || !Auth::user()->hasRole('admin')) {
             abort(403);
-        }
-
-        // Prevent deletion of predefined system roles
-        if ($role->isSystemRole()) {
-            return redirect()->route('admin.roles')
-                ->with('error', 'Cannot delete system roles. This role is essential to the application.');
         }
 
         // Prevent deletion if role has users

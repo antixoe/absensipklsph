@@ -48,6 +48,12 @@ class RoleFeatureSeeder extends Seeder
                 'provide_guidance',
                 'view_reports',
             ],
+            Role::COMPANY_MENTOR => [
+                'validate_attendance',
+                'validate_logbook',
+                'provide_guidance',
+                'view_reports',
+            ],
             Role::SCHOOL_SUPERVISOR => [
                 'provide_guidance',
                 'class_filter',

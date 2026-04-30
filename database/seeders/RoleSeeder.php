@@ -25,8 +25,13 @@ class RoleSeeder extends Seeder
             ],
             [
                 'name' => Role::INDUSTRY_SUPERVISOR,
-                'description' => 'Pembimbing PKL - validasi absensi dan logbook siswa',
-                'aliases' => ['industry_supervisor', 'pembimbing_pkl', 'pembimbing_perusahaan', 'pembimbing_industri'],
+                'description' => 'Pembimbing Sekolah - validasi absensi dan logbook siswa dari sekolah',
+                'aliases' => ['industry_supervisor', 'pembimbing_sekolah', 'pembimbing_industri'],
+            ],
+            [
+                'name' => Role::COMPANY_MENTOR,
+                'description' => 'Pembimbing Perusahaan - membimbing siswa di tempat kerja',
+                'aliases' => ['company_mentor', 'pembimbing_perusahaan', 'pembimbing'],
             ],
             [
                 'name' => Role::SCHOOL_SUPERVISOR,

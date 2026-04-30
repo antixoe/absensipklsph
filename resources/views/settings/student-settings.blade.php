@@ -1,6 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $currentLocale = old('locale', auth()->user()->locale ?? session('locale', app()->getLocale()));
+@endphp
 <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
 
     <!-- Page Header -->
@@ -38,6 +41,9 @@
             </button>
             <button class="nav-btn" onclick="showSection('password')">
                 <i class="bi bi-lock" style="margin-right: 8px;"></i>Password
+            </button>
+            <button class="nav-btn" onclick="showSection('language')">
+                <i class="bi bi-translate" style="margin-right: 8px;"></i>{{ __('settings.language_title') }}
             </button>
             <button class="nav-btn" onclick="showSection('privacy')">
                 <i class="bi bi-shield-lock" style="margin-right: 8px;"></i>Privacy
@@ -143,6 +149,31 @@
                         <!-- Submit Button -->
                         <button type="submit" style="background-color: #f97316; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background-color 0.2s;">
                             <i class="bi bi-shield-check" style="margin-right: 8px;"></i>Update Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Language Settings Section -->
+            <div id="language-section" class="settings-section" style="display: none;">
+                <div style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 30px;">
+                    <h2 style="font-size: 20px; font-weight: 700; color: #333; margin: 0 0 10px 0;">{{ __('settings.language_title') }}</h2>
+                    <p style="color: #666; margin: 0 0 25px 0;">{{ __('settings.language_description') }}</p>
+
+                    <form method="POST" action="{{ route('settings.updateLanguage') }}">
+                        @csrf
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #333; margin-bottom: 8px;">{{ __('settings.language_label') }}</label>
+                            <select name="locale" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                                <option value="id" {{ $currentLocale === 'id' ? 'selected' : '' }}>{{ __('settings.language_id') }}</option>
+                                <option value="en" {{ $currentLocale === 'en' ? 'selected' : '' }}>{{ __('settings.language_en') }}</option>
+                                <option value="zh" {{ $currentLocale === 'zh' ? 'selected' : '' }}>{{ __('settings.language_zh') }}</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" style="background-color: #f97316; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background-color 0.2s;">
+                            <i class="bi bi-check-lg" style="margin-right: 8px;"></i>{{ __('settings.language_save') }}
                         </button>
                     </form>
                 </div>

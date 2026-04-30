@@ -1,1 +1,0 @@
-@include('daily-agenda.form')

@@ -1,4 +1,4 @@
-# Aplikasi Absensi & Agenda PKL (Student Internship Attendance and Logbook Application)
+# Aplikasi Absensi Sekolah (School Attendance Application)
 
 A comprehensive web application for managing student internship attendance, logbooks, activities, and documents. The app features a Laravel REST API backend and a modern Vue.js frontend with Tailwind CSS styling.
 

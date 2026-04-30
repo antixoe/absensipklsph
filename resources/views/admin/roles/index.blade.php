@@ -1,10 +1,25 @@
 @extends('layouts.app')
 
 @section('content')
+    @php
+        $editRole = session('open_edit_role_id') ? $roles->firstWhere('id', session('open_edit_role_id')) : null;
+    @endphp
+
     <div class="page-header">
         <h1><i class="bi bi-shield-lock" style="margin-right: 8px;"></i>Manage Roles & Features</h1>
         <p>Atur hak akses peran pengguna</p>
     </div>
+
+    @if ($errors->any())
+        <div class="alert alert-danger" style="margin-bottom: 20px;">
+            <h4 style="margin-top: 0;"><i class="bi bi-exclamation-triangle-fill" style="margin-right: 8px;"></i>Validation Errors</h4>
+            <ul style="margin-bottom: 0;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <div class="card">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -46,14 +61,24 @@
                                 </div>
                             </td>
                             <td style="padding: 12px; text-align: center;">
-                                <a href="{{ route('admin.roles.edit', $role) }}" class="btn" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">
-                                    <i class="bi bi-pencil-square" style="margin-right: 5px;"></i>Edit
-                                </a>
-                                @unless($role->isSystemRole())
+                                <div style="display: inline-flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; white-space: nowrap;">
+                                    <button
+                                        type="button"
+                                        class="btn"
+                                        style="padding: 6px 12px; font-size: 12px;"
+                                        data-role-id="{{ $role->id }}"
+                                        data-role-name="{{ e($role->name) }}"
+                                        data-role-description="{{ e($role->description ?? '') }}"
+                                        data-role-update-url="{{ route('admin.roles.update', $role) }}"
+                                        data-role-features='@json($role->features->pluck("id")->values())'
+                                        onclick="openEditModal(this)"
+                                    >
+                                        <i class="bi bi-pencil-square" style="margin-right: 5px;"></i>Edit
+                                    </button>
                                     <button type="button" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="confirmDelete('{{ \App\Models\Role::displayName($role->name) }}', '{{ route('admin.roles.destroy', $role) }}')">
                                         <i class="bi bi-trash" style="margin-right: 5px;"></i>Delete
                                     </button>
-                                @endunless
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -67,7 +92,7 @@
         <div style="background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
             <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="margin: 0; font-size: 18px; color: #1f2937;">Hapus Peran</h3>
-                <button type="button" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;" onclick="closeDeleteModal()">×</button>
+                <button type="button" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;" onclick="closeDeleteModal()">&times;</button>
             </div>
 
             <div style="padding: 25px;">
@@ -144,6 +169,169 @@
         });
     </script>
 
+    <!-- Edit Role Modal -->
+    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto;">
+        <div style="background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 90%; max-width: 960px; margin: 20px auto; max-height: 90vh; overflow-y: auto;">
+            <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 18px; color: #1f2937;">
+                    <i class="bi bi-pencil-square" style="margin-right: 8px;"></i>Edit Peran
+                </h3>
+                <button type="button" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;" onclick="closeEditModal()">&times;</button>
+            </div>
+
+            @if ($errors->any())
+                <div style="padding: 20px 25px 0 25px;">
+                    <div style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 12px 15px; border-radius: 8px; font-size: 13px;">
+                        <strong>Periksa kembali data yang Anda masukkan.</strong>
+                        <ul style="margin: 8px 0 0 18px; padding: 0;">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            @endif
+
+            <form id="editRoleForm" action="" method="POST" style="padding: 25px;">
+                @csrf
+                @method('PUT')
+
+                <input type="hidden" id="edit_role_id" name="role_id" value="">
+
+                <div style="margin-bottom: 20px;">
+                    <label for="edit_name" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
+                        Nama Peran <span style="color: red;">*</span>
+                    </label>
+                    <input type="text" id="edit_name" name="name" placeholder="contoh: pembimbing_pkl, kepala_jurusan"
+                           style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;"
+                           required>
+                    <span style="color: #999; font-size: 12px; display: block; margin-top: 5px;">Gunakan huruf kecil dan garis bawah, misalnya `pembimbing_pkl`.</span>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label for="edit_description" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">
+                        Deskripsi <span style="color: #999; font-size: 11px;">(opsional)</span>
+                    </label>
+                    <textarea id="edit_description" name="description" rows="3" placeholder="Masukkan deskripsi peran..."
+                              style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
+                </div>
+
+                <div style="background: #f9fafb; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; border-left: 3px solid #93c5fd;">
+                    <p style="margin: 0; color: #666; font-size: 12px;">
+                        <i class="bi bi-lightbulb" style="margin-right: 5px;"></i>
+                        Ubah nama, deskripsi, dan fitur yang dapat diakses peran ini.
+                    </p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-bottom: 25px;">
+                    <div style="border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #1f2937; border-bottom: 2px solid #f0fdf4; padding-bottom: 10px;">
+                            <i class="bi bi-mortarboard" style="margin-right: 8px; color: #166534;"></i>Fitur Siswa
+                        </h4>
+                        @foreach ($features->whereIn('slug', ['checkin_checkout', 'fill_logbook', 'view_guidance']) as $feature)
+                            <div style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+                                <input type="checkbox" name="features[]" value="{{ $feature->id }}"
+                                    id="edit_student_feature_{{ $feature->id }}"
+                                    style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;">
+                                <label for="edit_student_feature_{{ $feature->id }}" style="margin-left: 10px; cursor: pointer; flex: 1;">
+                                    <strong style="display: block; margin-bottom: 3px;">{{ $feature->name }}</strong>
+                                    <span style="color: #999; font-size: 12px;">{{ $feature->description }}</span>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div style="border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #1f2937; border-bottom: 2px solid #fef3c7; padding-bottom: 10px;">
+                            <i class="bi bi-person-check" style="margin-right: 8px; color: #92400e;"></i>Fitur Pembimbing
+                        </h4>
+                        @foreach ($features->whereIn('slug', ['validate_attendance', 'validate_logbook', 'provide_guidance']) as $feature)
+                            <div style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+                                <input type="checkbox" name="features[]" value="{{ $feature->id }}"
+                                    id="edit_supervisor_feature_{{ $feature->id }}"
+                                    style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;">
+                                <label for="edit_supervisor_feature_{{ $feature->id }}" style="margin-left: 10px; cursor: pointer; flex: 1;">
+                                    <strong style="display: block; margin-bottom: 3px;">{{ $feature->name }}</strong>
+                                    <span style="color: #999; font-size: 12px;">{{ $feature->description }}</span>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div style="border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #1f2937; border-bottom: 2px solid #e0e7ff; padding-bottom: 10px;">
+                            <i class="bi bi-shield-lock" style="margin-right: 8px; color: #4338ca;"></i>Fitur Manajemen
+                        </h4>
+                        @foreach ($features->whereIn('slug', ['manage_roles', 'manage_users', 'manage_activities']) as $feature)
+                            <div style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+                                <input type="checkbox" name="features[]" value="{{ $feature->id }}"
+                                    id="edit_management_feature_{{ $feature->id }}"
+                                    style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;">
+                                <label for="edit_management_feature_{{ $feature->id }}" style="margin-left: 10px; cursor: pointer; flex: 1;">
+                                    <strong style="display: block; margin-bottom: 3px;">{{ $feature->name }}</strong>
+                                    <span style="color: #999; font-size: 12px;">{{ $feature->description }}</span>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div style="border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #1f2937; border-bottom: 2px solid #ddd6fe; padding-bottom: 10px;">
+                            <i class="bi bi-graph-up" style="margin-right: 8px; color: #5b21b6;"></i>Fitur Administratif
+                        </h4>
+                        @foreach ($features->whereIn('slug', ['view_all_data', 'view_reports', 'weekly_review']) as $feature)
+                            <div style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+                                <input type="checkbox" name="features[]" value="{{ $feature->id }}"
+                                    id="edit_admin_feature_{{ $feature->id }}"
+                                    style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;">
+                                <label for="edit_admin_feature_{{ $feature->id }}" style="margin-left: 10px; cursor: pointer; flex: 1;">
+                                    <strong style="display: block; margin-bottom: 3px;">{{ $feature->name }}</strong>
+                                    <span style="color: #999; font-size: 12px;">{{ $feature->description }}</span>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div style="border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #1f2937; border-bottom: 2px solid #fee2e2; padding-bottom: 10px;">
+                            <i class="bi bi-funnel" style="margin-right: 8px; color: #991b1b;"></i>Fitur Penyaring
+                        </h4>
+                        @foreach ($features->whereIn('slug', ['department_filter', 'class_filter']) as $feature)
+                            <div style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+                                <input type="checkbox" name="features[]" value="{{ $feature->id }}"
+                                    id="edit_filter_feature_{{ $feature->id }}"
+                                    style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px;">
+                                <label for="edit_filter_feature_{{ $feature->id }}" style="margin-left: 10px; cursor: pointer; flex: 1;">
+                                    <strong style="display: block; margin-bottom: 3px;">{{ $feature->name }}</strong>
+                                    <span style="color: #999; font-size: 12px;">{{ $feature->description }}</span>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                    <button type="button" style="padding: 10px 16px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;" onclick="closeEditModal()">Batal</button>
+                    <button type="submit" style="padding: 10px 16px; background: #0369a1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                        <i class="bi bi-check-lg" style="margin-right: 5px;"></i>Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if ($editRole)
+        <script>
+            window.__openEditRoleData = {
+                id: {{ $editRole->id }},
+                name: @json(old('name', $editRole->name)),
+                description: @json(old('description', $editRole->description ?? '')),
+                updateUrl: @json(route('admin.roles.update', $editRole)),
+                features: @json(old('features', $editRole->features->pluck('id')->values()->all())),
+            };
+        </script>
+    @endif
+
     <!-- Create Role Modal -->
     <div id="createModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto;">
         <div style="background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 90%; max-width: 600px; margin: 20px auto;">
@@ -151,7 +339,7 @@
                 <h3 style="margin: 0; font-size: 18px; color: #1f2937;">
                     <i class="bi bi-plus-circle" style="margin-right: 8px;"></i>Tambah Peran Baru
                 </h3>
-                <button type="button" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;" onclick="closeCreateModal()">×</button>
+                <button type="button" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;" onclick="closeCreateModal()">&times;</button>
             </div>
 
             <form id="createRoleForm" action="{{ route('admin.roles.store') }}" method="POST" style="padding: 25px;">
@@ -193,6 +381,36 @@
     </div>
 
     <script>
+        function openEditModal(button) {
+            const selectedFeatures = button.dataset.roleFeatures ? JSON.parse(button.dataset.roleFeatures) : [];
+
+            openEditModalFromData({
+                id: button.dataset.roleId,
+                name: button.dataset.roleName || '',
+                description: button.dataset.roleDescription || '',
+                updateUrl: button.dataset.roleUpdateUrl || '',
+                features: selectedFeatures,
+            });
+        }
+
+        function openEditModalFromData(roleData) {
+            document.getElementById('edit_role_id').value = roleData.id || '';
+            document.getElementById('editRoleForm').action = roleData.updateUrl || '';
+            document.getElementById('edit_name').value = roleData.name || '';
+            document.getElementById('edit_description').value = roleData.description || '';
+
+            const selectedFeatures = new Set((roleData.features || []).map(String));
+            document.querySelectorAll('#editModal input[name="features[]"]').forEach(function(checkbox) {
+                checkbox.checked = selectedFeatures.has(checkbox.value);
+            });
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
         function openCreateModal() {
             document.getElementById('createModal').style.display = 'flex';
         }
@@ -213,8 +431,19 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeCreateModal();
+                closeEditModal();
             }
         });
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+
+        if (window.__openEditRoleData) {
+            openEditModalFromData(window.__openEditRoleData);
+        }
     </script>
 
     <div style="margin-top: 30px;">

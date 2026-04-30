@@ -1178,9 +1178,9 @@
                     .then(data => {
                         if (data.success) {
                             if (isCheckoutPage && data.data && data.data.action === 'checkout') {
-                                showStatus('Checkout saved successfully. Redirecting to Daily Agenda...', 'success');
+                                showStatus('Checkout saved successfully. Redirecting to Dashboard...', 'success');
                                 setTimeout(() => {
-                                    window.location.href = '{{ route("daily-agenda.index") }}';
+                                    window.location.href = '{{ route("dashboard") }}';
                                 }, 1800);
                                 return;
                             }

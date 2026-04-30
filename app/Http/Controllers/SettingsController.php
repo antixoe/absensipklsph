@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Schema;
 
 class SettingsController extends Controller
 {
@@ -332,6 +334,35 @@ class SettingsController extends Controller
         );
 
         return redirect()->route('settings.index')->with('success', 'Password changed successfully!');
+    }
+
+    /**
+     * Update language preference.
+     */
+    public function updateLanguage(Request $request)
+    {
+        $validated = $request->validate([
+            'locale' => ['required', 'in:id,en,zh'],
+        ]);
+
+        $locale = $validated['locale'];
+
+        session(['locale' => $locale]);
+
+        if (auth()->check() && Schema::hasColumn('users', 'locale')) {
+            auth()->user()->update(['locale' => $locale]);
+        }
+
+        App::setLocale($locale);
+
+        ActivityLog::log(
+            'updated_language',
+            'user',
+            auth()->id(),
+            'Updated language preference to ' . $locale
+        );
+
+        return redirect()->route('settings.index')->with('success', __('settings.language_updated'));
     }
 
     /**

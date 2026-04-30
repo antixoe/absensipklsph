@@ -179,8 +179,8 @@ class QRCodeController extends Controller
         }
 
         if ($isCheckoutPage && $todayAbsence && $todayAbsence->scanned_qr_out_at) {
-            return redirect()->route('daily-agenda.index')
-                ->with('success', 'Checkout already recorded today. You have been moved to Daily Agenda.');
+            return redirect()->route('dashboard')
+                ->with('success', 'Checkout already recorded today.');
         }
 
         return view('qrcode.scanner', compact('student', 'todayQRCodes', 'todayAbsence'));

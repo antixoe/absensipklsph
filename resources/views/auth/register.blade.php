@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Absensi PKL</title>
+    <title>Register - Absensi Sekolah</title>
     <style>
         * {
             margin: 0;
@@ -288,7 +288,7 @@
         <div class="register-header">
             <img src="https://www.permataharapanku.sch.id/images/logo_sph.png" alt="School Logo" class="logo-img">
             <h1>Create Account</h1>
-            <p>Join Absensi PKL System</p>
+            <p>Join Absensi Sekolah System</p>
         </div>
 
         @if ($errors->any())

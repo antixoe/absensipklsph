@@ -9,7 +9,6 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AbsenceController;
-use App\Http\Controllers\DailyAgendaController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ChatbotController;
@@ -55,19 +54,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
     Route::get('/absence/all', [AbsenceController::class, 'all'])->name('absence.all');
     Route::get('/absen-pulang', [QRCodeController::class, 'scanner'])->name('absen.pulang');
-    
-    // Daily Agenda CRUD
-    Route::get('/daily-agenda', [DailyAgendaController::class, 'index'])->name('daily-agenda.index');
-    Route::get('/daily-agenda/create', [DailyAgendaController::class, 'create'])->name('daily-agenda.create');
-    Route::post('/daily-agenda', [DailyAgendaController::class, 'store'])->name('daily-agenda.store');
-    Route::get('/daily-agenda/{dailyAgenda}/edit', [DailyAgendaController::class, 'edit'])->name('daily-agenda.edit');
-    Route::put('/daily-agenda/{dailyAgenda}', [DailyAgendaController::class, 'update'])->name('daily-agenda.update');
-    Route::get('/daily-agenda/{dailyAgenda}', [DailyAgendaController::class, 'show'])->name('daily-agenda.show');
-    Route::post('/daily-agenda/{dailyAgenda}/mark-complete', [DailyAgendaController::class, 'markComplete'])->name('daily-agenda.mark-complete');
-    Route::post('/daily-agenda/{dailyAgenda}/unmark-complete', [DailyAgendaController::class, 'unmarkComplete'])->name('daily-agenda.unmark-complete');
-    Route::post('/daily-agenda/{dailyAgenda}/approve-student', [DailyAgendaController::class, 'approveStudent'])->name('daily-agenda.approve-student');
-    Route::post('/daily-agenda/{dailyAgenda}/approve-company-mentor', [DailyAgendaController::class, 'approveCompanyMentor'])->name('daily-agenda.approve-company-mentor');
-    Route::post('/daily-agenda/{dailyAgenda}/approve-school-teacher', [DailyAgendaController::class, 'approveSchoolTeacher'])->name('daily-agenda.approve-school-teacher');
     
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -118,6 +104,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/update-profile', [SettingsController::class, 'updateProfile'])->name('settings.updateProfile');
     Route::post('/settings/update-password', [SettingsController::class, 'updatePassword'])->name('settings.updatePassword');
+    Route::post('/settings/update-language', [SettingsController::class, 'updateLanguage'])->name('settings.updateLanguage');
     Route::post('/settings/clear-logs', [SettingsController::class, 'clearLogs'])->name('settings.clearLogs');
     Route::get('/settings/export-logs', [SettingsController::class, 'exportLogs'])->name('settings.exportLogs');
     Route::get('/settings/trash', [SettingsController::class, 'trash'])->name('settings.trash');

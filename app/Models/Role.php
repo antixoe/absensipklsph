@@ -18,7 +18,8 @@ class Role extends Model
 
     // Predefined role constants
     public const STUDENT = 'siswa';
-    public const INDUSTRY_SUPERVISOR = 'pembimbing_pkl';
+    public const INDUSTRY_SUPERVISOR = 'pembimbing_sekolah';
+    public const COMPANY_MENTOR = 'pembimbing_perusahaan';
     public const HEAD_OF_DEPARTMENT = 'kepala_jurusan';
     public const HOMEROOM_TEACHER = 'wali_kelas';
     public const SCHOOL_PRINCIPAL = 'kepala_sekolah';
@@ -34,8 +35,9 @@ class Role extends Model
         return [
             self::ADMIN => ['admin', 'administrator', 'administrator_sistem'],
             self::STUDENT => ['student', 'siswa', 'murid'],
-            self::INDUSTRY_SUPERVISOR => ['industry_supervisor', 'pembimbing_pkl', 'pembimbing', 'pembimbing_perusahaan', 'pembimbing_industri'],
-            self::SCHOOL_SUPERVISOR => ['pembimbing_sekolah', 'guru_pembimbing', 'guru_pembimbing_sekolah', 'guru_pembimbing_sekolah'],
+            self::INDUSTRY_SUPERVISOR => ['industry_supervisor', 'pembimbing_sekolah', 'pembimbing_industri'],
+            self::COMPANY_MENTOR => ['company_mentor', 'pembimbing_perusahaan', 'pembimbing'],
+            self::SCHOOL_SUPERVISOR => ['pembimbing_sekolah', 'guru_pembimbing', 'guru_pembimbing_sekolah'],
             self::HEAD_OF_DEPARTMENT => ['head_of_department', 'kepala_jurusan', 'ketua_jurusan'],
             self::HOMEROOM_TEACHER => ['homeroom_teacher', 'wali_kelas', 'walikelas'],
             self::SCHOOL_PRINCIPAL => ['school_principal', 'kepala_sekolah'],
@@ -71,7 +73,8 @@ class Role extends Model
         return match ($canonical) {
             self::ADMIN => 'Admin',
             self::STUDENT => 'Siswa',
-            self::INDUSTRY_SUPERVISOR => 'Pembimbing PKL',
+            self::INDUSTRY_SUPERVISOR => 'Pembimbing Sekolah',
+            self::COMPANY_MENTOR => 'Pembimbing Perusahaan',
             self::HEAD_OF_DEPARTMENT => 'Kepala Jurusan',
             self::HOMEROOM_TEACHER => 'Wali Kelas',
             self::SCHOOL_PRINCIPAL => 'Kepala Sekolah',
@@ -81,29 +84,14 @@ class Role extends Model
         };
     }
 
-    /**
-     * Canonical role names that should be treated as system roles.
-     */
     public static function systemRoleNames(): array
     {
-        return [
-            self::ADMIN,
-            self::STUDENT,
-            self::INDUSTRY_SUPERVISOR,
-            self::SCHOOL_SUPERVISOR,
-            self::HEAD_OF_DEPARTMENT,
-            self::HOMEROOM_TEACHER,
-            self::SCHOOL_PRINCIPAL,
-            self::STUDENT_AFFAIRS,
-        ];
+        return [];
     }
 
-    /**
-     * Determine whether this role is a protected system role.
-     */
     public function isSystemRole(): bool
     {
-        return in_array(self::normalizeRoleName($this->name), self::systemRoleNames(), true);
+        return false;
     }
 
     /**

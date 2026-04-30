@@ -199,13 +199,13 @@
     <!-- Messages Area -->
     <div class="chatbot-messages" id="messagesContainer">
         <div class="chatbot-info">
-            <strong>💡 Tip:</strong> Tanyakan tentang absensi, program PKL, atau ketik "bantuan" untuk melihat perintah yang tersedia.
+            <strong>💡 Tip:</strong> Tanyakan tentang absensi, program sekolah, atau ketik "bantuan" untuk melihat perintah yang tersedia.
         </div>
 
         <!-- Welcome Message -->
         <div class="message bot">
             <div class="message-content">
-                Halo! 👋 Saya adalah chatbot Absensi PKL. Saya siap membantu Anda mengetahui status absensi, program PKL, dan informasi lainnya. Ada yang bisa saya bantu?
+                Halo! 👋 Saya adalah chatbot Absensi Sekolah. Saya siap membantu Anda mengetahui status absensi, program sekolah, dan informasi lainnya. Ada yang bisa saya bantu?
             </div>
         </div>
     </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Absensi PKL</title>
+    <title>Login - Absensi Sekolah</title>
     <style>
         * {
             margin: 0;
@@ -229,7 +229,7 @@
     <div class="login-container">
         <div class="login-header">
             <img src="https://www.permataharapanku.sch.id/images/logo_sph.png" alt="School Logo" class="logo-img">
-            <h1>Absensi PKL</h1>
+            <h1>Absensi Sekolah</h1>
             <p>Student Internship Attendance & Logbook</p>
         </div>
 
