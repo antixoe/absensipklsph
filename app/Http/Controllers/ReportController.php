@@ -20,7 +20,7 @@ class ReportController extends Controller
      */
     private function isHomeroomTeacher(?User $user): bool
     {
-        return $user?->hasRole(Role::HOMEROOM_TEACHER) ?? false;
+        return $user?->hasRole(Role::WALI_KELAS) ?? false;
     }
 
     /**

@@ -17,15 +17,17 @@ class Role extends Model
     ];
 
     // Predefined role constants
-    public const STUDENT = 'siswa';
-    public const INDUSTRY_SUPERVISOR = 'pembimbing_sekolah';
-    public const COMPANY_MENTOR = 'pembimbing_perusahaan';
-    public const HEAD_OF_DEPARTMENT = 'kepala_jurusan';
-    public const HOMEROOM_TEACHER = 'wali_kelas';
-    public const SCHOOL_PRINCIPAL = 'kepala_sekolah';
-    public const SCHOOL_SUPERVISOR = 'pembimbing_sekolah';
-    public const STUDENT_AFFAIRS = 'kesiswaan';
-    public const ADMIN = 'admin';
+    public const KESISWAAN = 'kesiswaan';         // Student Affairs - Admin equivalent, creates QR codes
+    public const KURIKULUM = 'kurikulum';         // Curriculum
+    public const WALI_KELAS = 'wali_kelas';       // Homeroom Teacher
+    public const GURU = 'guru';                   // Teacher - Scanner holder
+    public const MURID = 'murid';                 // Student
+    public const KETUA_KELAS = 'ketua_kelas';     // Class Leader
+    public const SEKRETARIS_KELAS = 'sekretaris_kelas';  // Class Secretary
+    
+    // Deprecated - kept for backward compatibility
+    public const STUDENT = 'murid';
+    public const TEACHER = 'guru';
 
     /**
      * Get the normalized role aliases mapped to their canonical names.
@@ -33,15 +35,13 @@ class Role extends Model
     public static function roleAliases(): array
     {
         return [
-            self::ADMIN => ['admin', 'administrator', 'administrator_sistem'],
-            self::STUDENT => ['student', 'siswa', 'murid'],
-            self::INDUSTRY_SUPERVISOR => ['industry_supervisor', 'pembimbing_sekolah', 'pembimbing_industri'],
-            self::COMPANY_MENTOR => ['company_mentor', 'pembimbing_perusahaan', 'pembimbing'],
-            self::SCHOOL_SUPERVISOR => ['pembimbing_sekolah', 'guru_pembimbing', 'guru_pembimbing_sekolah'],
-            self::HEAD_OF_DEPARTMENT => ['head_of_department', 'kepala_jurusan', 'ketua_jurusan'],
-            self::HOMEROOM_TEACHER => ['homeroom_teacher', 'wali_kelas', 'walikelas'],
-            self::SCHOOL_PRINCIPAL => ['school_principal', 'kepala_sekolah'],
-            self::STUDENT_AFFAIRS => ['kesiswaan', 'student_affairs'],
+            self::KESISWAAN => ['kesiswaan', 'student_affairs', 'admin'],
+            self::KURIKULUM => ['kurikulum', 'curriculum'],
+            self::WALI_KELAS => ['wali_kelas', 'homeroom_teacher', 'walikelas'],
+            self::GURU => ['guru', 'teacher'],
+            self::MURID => ['murid', 'student', 'siswa'],
+            self::KETUA_KELAS => ['ketua_kelas', 'class_leader', 'class_captain'],
+            self::SEKRETARIS_KELAS => ['sekretaris_kelas', 'class_secretary'],
         ];
     }
 
@@ -68,18 +68,22 @@ class Role extends Model
      */
     public static function displayName(string $roleName): string
     {
+        $raw = strtolower(trim($roleName));
+
+        if ($raw === 'admin') {
+            return 'Admin';
+        }
+
         $canonical = self::normalizeRoleName($roleName);
 
         return match ($canonical) {
-            self::ADMIN => 'Admin',
-            self::STUDENT => 'Siswa',
-            self::INDUSTRY_SUPERVISOR => 'Pembimbing Sekolah',
-            self::COMPANY_MENTOR => 'Pembimbing Perusahaan',
-            self::HEAD_OF_DEPARTMENT => 'Kepala Jurusan',
-            self::HOMEROOM_TEACHER => 'Wali Kelas',
-            self::SCHOOL_PRINCIPAL => 'Kepala Sekolah',
-            self::SCHOOL_SUPERVISOR => 'Pembimbing Sekolah',
-            self::STUDENT_AFFAIRS => 'Kesiswaan',
+            self::KESISWAAN => 'Kesiswaan',
+            self::KURIKULUM => 'Kurikulum',
+            self::WALI_KELAS => 'Wali Kelas',
+            self::GURU => 'Guru',
+            self::MURID => 'Murid',
+            self::KETUA_KELAS => 'Ketua Kelas',
+            self::SEKRETARIS_KELAS => 'Sekretaris Kelas',
             default => ucwords(str_replace('_', ' ', $canonical)),
         };
     }

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', __('ui.dashboard')) - {{ __('ui.app_name') }}</title>
+    <title>@yield('title', 'Dashboard') - Absensi Sekolah</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
         * {
@@ -571,58 +571,64 @@
     <nav class="navbar">
         <a href="/dashboard" class="navbar-brand">
             <img src="https://www.permataharapanku.sch.id/images/logo_sph.png" alt="School Logo">
-            {{ __('ui.app_name') }}
+            Absensi Sekolah
         </a>
 
         <div class="navbar-nav">
-            <a href="/dashboard" class="{{ request()->is('dashboard') ? 'active' : '' }}">{{ __('ui.dashboard') }}</a>
+            <a href="/dashboard" class="{{ request()->is('dashboard') ? 'active' : '' }}">Dashboard</a>
             <a href="{{ route('notifications.index') }}" class="{{ request()->is('notifications*') ? 'active' : '' }}" style="position: relative;">
-                <i class="bi bi-bell" style="margin-right: 4px;"></i>{{ __('ui.notifications') }}
+                <i class="bi bi-bell" style="margin-right: 4px;"></i>Notifications
                 @if(auth()->user()->unreadNotifications->count() > 0)
                     <span style="position: absolute; top: -5px; right: -10px; background: #ef4444; color: white; border-radius: 10px; padding: 2px 6px; font-size: 11px; font-weight: 700;">
                         {{ auth()->user()->unreadNotifications->count() }}
                     </span>
                 @endif
             </a>
-            @if(auth()->user()->hasRole('student'))
-                <a href="{{ route('absen.index') }}" class="{{ request()->is('absen') || (request()->is('absence') && !request()->is('absence/all*')) ? 'active' : '' }}">{{ __('ui.attendance') }}</a>
-                <a href="{{ route('absen.pulang') }}" class="{{ request()->is('absen-pulang*') ? 'active' : '' }}">
-                    <i class="bi bi-box-arrow-right" style="margin-right: 4px;"></i>{{ __('ui.check_out') }}
-                </a>
+            @if(auth()->user()->hasRole('murid'))
+                <a href="{{ route('absen.index') }}" class="{{ request()->is('absen') || (request()->is('absence') && !request()->is('absence/all*')) ? 'active' : '' }}">Attendance</a>
             @endif
-            @if(auth()->user()->hasAnyRole(['pembimbing', 'homeroom_teacher', 'head_of_department', 'industry_supervisor', 'school_principal', 'admin']))
+            @if(auth()->user()->hasAnyRole(['guru', 'wali_kelas', 'kurikulum', 'kesiswaan']))
                 <a href="{{ route('absence.all') }}" class="{{ request()->is('absence/all*') ? 'active' : '' }}">
-                    <i class="bi bi-list-check" style="margin-right: 4px;"></i>{{ __('ui.all_absences') }}
+                    <i class="bi bi-list-check" style="margin-right: 4px;"></i>All Absences
                 </a>
+                @if(auth()->user()->hasAnyRole(['guru', 'wali_kelas']))
+                <a href="{{ route('qrcode.teacher-scanner') }}" class="{{ request()->is('qrcode-scanner*') ? 'active' : '' }}">
+                    <i class="bi bi-qr-code" style="margin-right: 4px;"></i>QR Scanner
+                </a>
+                @else
                 <a href="{{ route('qrcode.index') }}" class="{{ request()->is('qrcode*') ? 'active' : '' }}">
-                    <i class="bi bi-qr-code" style="margin-right: 4px;"></i>{{ __('ui.qr_codes') }}
+                    <i class="bi bi-qr-code" style="margin-right: 4px;"></i>QR Codes
                 </a>
+                @endif
             @endif
-            @if(!auth()->user()->hasRole('student'))
+            @if(auth()->user()->hasAnyRole(['guru', 'kurikulum', 'kesiswaan']))
                 <a href="{{ route('reports.index') }}" class="{{ request()->is('reports*') ? 'active' : '' }}">
-                    <i class="bi bi-bar-chart" style="margin-right: 4px;"></i>{{ __('ui.reports') }}
+                    <i class="bi bi-bar-chart" style="margin-right: 4px;"></i>Reports
                 </a>
             @endif
-            @if(auth()->user()->hasRole('admin'))
+            @if(auth()->user()->hasRole('kesiswaan'))
                 <a href="{{ route('admin.users') }}" class="{{ request()->is('admin/users*') ? 'active' : '' }}" style="margin-left: 20px;">
-                    <i class="bi bi-people" style="margin-right: 5px;"></i>{{ __('ui.users') }}
+                    <i class="bi bi-people" style="margin-right: 5px;"></i>Users
                 </a>
                 <a href="{{ route('admin.roles') }}" class="{{ request()->is('admin/roles*') ? 'active' : '' }}">
-                    <i class="bi bi-shield-lock" style="margin-right: 5px;"></i>{{ __('ui.roles') }}
+                    <i class="bi bi-shield-lock" style="margin-right: 5px;"></i>Roles
+                </a>
+                <a href="{{ route('admin.levels.index') }}" class="{{ request()->is('admin/levels*') ? 'active' : '' }}">
+                    <i class="bi bi-layers" style="margin-right: 5px;"></i>Levels
                 </a>
             @endif
         </div>
 
         <div class="navbar-end">
             <a href="{{ route('settings.index') }}" class="{{ request()->is('settings*') ? 'active' : '' }}" style="color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; transition: background 0.3s;">
-                <i class="bi bi-gear" style="margin-right: 4px;"></i>{{ __('ui.settings') }}
+                <i class="bi bi-gear" style="margin-right: 4px;"></i>Settings
             </a>
             <div class="user-info">
-                {{ __('ui.welcome') }}, <strong>{{ Auth::user()->name }}</strong>
+                Welcome, <strong>{{ Auth::user()->name }}</strong>
             </div>
             <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
                 @csrf
-                <button type="submit" class="logout-btn">{{ __('ui.logout') }}</button>
+                <button type="submit" class="logout-btn">Log Out</button>
             </form>
         </div>
     </nav>
@@ -649,12 +655,12 @@
 
         <div class="chatbot-modal-messages" id="chatbotMessagesContainer">
             <div class="chatbot-modal-info">
-                <strong>💡 {{ __('ui.tip') }}:</strong> {{ __('ui.chatbot_tip') }}
+                <strong>💡 Tip:</strong> Ask about attendance, school programs, or type "help" to see the available commands.
             </div>
 
             <div class="chatbot-modal-message bot">
                 <div class="chatbot-modal-message-content">
-                    {{ __('ui.chatbot_greeting') }}
+                    Hello! I am the Absensi Sekolah chatbot. I can help you check attendance status, school programs, and other information. How can I help?
                 </div>
             </div>
         </div>

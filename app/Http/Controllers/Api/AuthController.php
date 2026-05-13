@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\Instructor;
 use App\Models\Role;
+use App\Models\QRCode;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -33,16 +34,26 @@ class AuthController extends \Illuminate\Routing\Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-            'role_id' => Role::resolveByName(Role::STUDENT)?->id,
+            'role_id' => Role::resolveByName(Role::MURID)?->id,
         ]);
 
-        Student::create([
-            'user_id' => $user->id,
-            'nim' => $request->nim,
-            'school' => $request->school,
-            'major' => $request->major,
-            'phone' => $request->phone,
-        ]);
+        $student = Student::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'nim' => $request->nim,
+                'school' => $request->school,
+                'major' => $request->major,
+                'phone' => $request->phone,
+            ]
+        );
+
+        if (!$student->qrCode) {
+            $qrCode = QRCode::createStudentQRCode($student->id);
+            $student->update([
+                'qr_code_id' => $qrCode->id,
+                'student_qr_code' => $qrCode->code,
+            ]);
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -73,7 +84,7 @@ class AuthController extends \Illuminate\Routing\Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-            'role_id' => Role::resolveByName(Role::INDUSTRY_SUPERVISOR)?->id,
+            'role_id' => Role::resolveByName(Role::GURU)?->id,
         ]);
 
         Instructor::create([

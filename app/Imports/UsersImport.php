@@ -85,7 +85,7 @@ class UsersImport
                 ]);
 
                 // If this imported user is a student, make sure the student profile exists too.
-                if ($role->name === Role::STUDENT) {
+                if ($role->name === Role::MURID) {
                     $nim = trim((string) ($rowData['nim'] ?? ''));
                     Student::updateOrCreate(
                         ['user_id' => $user->id],

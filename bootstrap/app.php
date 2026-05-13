@@ -17,9 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => AdminMiddleware::class,
         ]);
 
-        $middleware->web(append: [
-            SetLocale::class,
-        ]);
+        // Language middleware removed - using English only
+        // $middleware->web(append: [
+        //     SetLocale::class,
+        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

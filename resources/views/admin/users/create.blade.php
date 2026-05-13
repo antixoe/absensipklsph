@@ -94,6 +94,22 @@
                 </select>
             </div>
 
+            <!-- Level -->
+            <div style="margin-bottom: 20px;">
+                <label for="level" style="display: block; margin-bottom: 8px; font-weight: 600;">
+                    Level <span style="color: #999;">(optional)</span>
+                </label>
+                <select id="level" name="level" class="form-control">
+                    <option value="">Select level (optional)</option>
+                    @foreach ($availableLevels as $level)
+                        <option value="{{ $level->name }}" {{ old('level') === $level->name ? 'selected' : '' }}>
+                            {{ \App\Models\Level::displayName($level->name) }}
+                        </option>
+                    @endforeach
+                </select>
+                <small style="color: #6b7280; margin-top: 4px; display: block;">Leave this blank if the user does not need a level.</small>
+            </div>
+
             <!-- Status -->
             <div style="margin-bottom: 20px;">
                 <label for="status" style="display: block; margin-bottom: 8px; font-weight: 600;">

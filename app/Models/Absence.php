@@ -28,6 +28,7 @@ class Absence extends Model
         'scanned_qr_at',
         'scanned_qr_out_at',
         'qr_code',
+        'recorded_by',
     ];
 
     protected $casts = [

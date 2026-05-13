@@ -22,6 +22,8 @@ class Student extends Model
         'start_date',
         'end_date',
         'status',
+        'qr_code_id',
+        'student_qr_code',
     ];
 
     protected $dates = [
@@ -45,6 +47,14 @@ class Student extends Model
     public function internshipProgram(): BelongsTo
     {
         return $this->belongsTo(InternshipProgram::class);
+    }
+
+    /**
+     * Get the QR code associated with this student.
+     */
+    public function qrCode(): BelongsTo
+    {
+        return $this->belongsTo(QRCode::class, 'qr_code_id');
     }
 
     /**

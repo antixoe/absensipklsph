@@ -7,6 +7,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LogbookEntryController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\LevelController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AbsenceController;
 use App\Http\Controllers\ReportController;
@@ -53,7 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/absence/create', [AbsenceController::class, 'create'])->name('absence.create');
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
     Route::get('/absence/all', [AbsenceController::class, 'all'])->name('absence.all');
-    Route::get('/absen-pulang', [QRCodeController::class, 'scanner'])->name('absen.pulang');
+    // Check-out removed - only check-in is used now (teacher scans QR code)
     
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -70,8 +71,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/qrcode/{qrCode}/deactivate', [QRCodeController::class, 'deactivate'])->name('qrcode.deactivate');
     Route::get('/qrcode/{qrCode}/download', [QRCodeController::class, 'downloadQRImage'])->name('qrcode.download');
     
-    // QR Code Scanner (Student)
-    Route::get('/qrcode-scanner', [QRCodeController::class, 'scanner'])->name('qrcode.scanner');
+    // QR Code Scanning (Teachers only - students cannot scan)
+    Route::get('/qrcode-scanner', [QRCodeController::class, 'teacherScanner'])->name('qrcode.teacher-scanner');
     Route::post('/qrcode-scan', [QRCodeController::class, 'scan'])->name('qrcode.scan');
     
     // Reports
@@ -104,7 +105,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/update-profile', [SettingsController::class, 'updateProfile'])->name('settings.updateProfile');
     Route::post('/settings/update-password', [SettingsController::class, 'updatePassword'])->name('settings.updatePassword');
-    Route::post('/settings/update-language', [SettingsController::class, 'updateLanguage'])->name('settings.updateLanguage');
+    // Language settings removed - using English only
+    // Route::post('/settings/update-language', [SettingsController::class, 'updateLanguage'])->name('settings.updateLanguage');
     Route::post('/settings/clear-logs', [SettingsController::class, 'clearLogs'])->name('settings.clearLogs');
     Route::get('/settings/export-logs', [SettingsController::class, 'exportLogs'])->name('settings.exportLogs');
     Route::get('/settings/trash', [SettingsController::class, 'trash'])->name('settings.trash');
@@ -126,6 +128,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/roles/{role}/edit', [RoleController::class, 'edit'])->name('admin.roles.edit');
         Route::put('/admin/roles/{role}', [RoleController::class, 'update'])->name('admin.roles.update');
         Route::delete('/admin/roles/{role}', [RoleController::class, 'destroy'])->name('admin.roles.destroy');
+        
+        // Levels Management
+        Route::get('/admin/levels', [LevelController::class, 'index'])->name('admin.levels.index');
+        Route::get('/admin/levels/create', [LevelController::class, 'create'])->name('admin.levels.create');
+        Route::post('/admin/levels', [LevelController::class, 'store'])->name('admin.levels.store');
+        Route::get('/admin/levels/{level}/details', [LevelController::class, 'details'])->name('admin.levels.details');
+        Route::get('/admin/levels/{level}', [LevelController::class, 'show'])->name('admin.levels.show');
+        Route::get('/admin/levels/{level}/edit', [LevelController::class, 'edit'])->name('admin.levels.edit');
+        Route::put('/admin/levels/{level}', [LevelController::class, 'update'])->name('admin.levels.update');
+        Route::delete('/admin/levels/{level}', [LevelController::class, 'destroy'])->name('admin.levels.destroy');
         
         // Features Management
         Route::get('/admin/features', [RoleController::class, 'features'])->name('admin.features');

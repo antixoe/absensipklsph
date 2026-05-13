@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Role;
+use App\Models\QRCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -66,8 +67,8 @@ class AuthController extends Controller
         ]);
 
         $roleName = $validated['role'] === 'student'
-            ? Role::STUDENT
-            : Role::INDUSTRY_SUPERVISOR;
+            ? Role::MURID
+            : Role::GURU;
 
         $roleId = Role::resolveByName($roleName)?->id;
 
@@ -80,13 +81,24 @@ class AuthController extends Controller
         ]);
 
         if ($validated['role'] === 'student') {
-            Student::create([
-                'user_id' => $user->id,
-                'nim' => $validated['nim'],
-                'school' => $validated['school'],
-                'major' => $validated['major'],
-                'phone' => $validated['phone'] ?? null,
-            ]);
+            $student = Student::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'nim' => $validated['nim'],
+                    'school' => $validated['school'],
+                    'major' => $validated['major'],
+                    'phone' => $validated['phone'] ?? null,
+                ]
+            );
+
+            // Auto-generate QR code for student (for ID card)
+            if (!$student->qrCode) {
+                $qrCode = QRCode::createStudentQRCode($student->id);
+                $student->update([
+                    'qr_code_id' => $qrCode->id,
+                    'student_qr_code' => $qrCode->code,
+                ]);
+            }
         }
 
         Auth::login($user);

@@ -299,7 +299,7 @@ class AttendanceController extends \Illuminate\Routing\Controller
     {
         $user = $request->user();
 
-        if (!$user || !$user->hasRole(Role::STUDENT)) {
+        if (!$user || !$user->hasRole(Role::MURID)) {
             return response()->json([
                 'message' => 'Only students can access attendance records.',
             ], 403);

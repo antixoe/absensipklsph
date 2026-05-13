@@ -18,6 +18,17 @@
         </div>
     @endif
 
+    @php
+        $levelOptions = $availableLevels->map(fn ($level) => [
+            'value' => $level->name,
+            'label' => \App\Models\Level::displayName($level->name),
+        ])->values()->all();
+    @endphp
+
+    <script>
+        window.__availableLevels = @json($levelOptions);
+    </script>
+
     <div class="card">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span><i class="bi bi-list" style="margin-right: 8px;"></i>Users List</span>
@@ -115,6 +126,7 @@
                     <option value="activate" style="color: #10b981;">✓ Activate</option>
                     <option value="deactivate" style="color: #ef4444;">✗ Deactivate</option>
                     <option value="change_role" style="color: #3b82f6;">⚙ Change Role</option>
+                    <option value="change_level" style="color: #8b5cf6;">⚙ Change Level</option>
                     <option value="delete" style="color: #991b1b;">🗑 Delete</option>
                 </select>
 
@@ -142,6 +154,33 @@
                     <option value="" style="color: #9ca3af;">-- Pilih Peran --</option>
                     @foreach ($roles as $role)
                         <option value="{{ $role->id }}" style="color: #3b82f6;">{{ \App\Models\Role::displayName($role->name) }}</option>
+                    @endforeach
+                </select>
+
+                <select id="levelSelect" style="
+                    display: none;
+                    padding: 10px 14px; 
+                    border: 2px solid #8b5cf6; 
+                    border-radius: 8px; 
+                    font-size: 14px; 
+                    font-weight: 500;
+                    background: white;
+                    color: #1f2937;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    appearance: none;
+                    background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238b5cf6%22 stroke-width=%222%22%3E%3Cpolyline points=%226 9 12 15 18 9%22%3E%3C/polyline%3E%3C/svg%3E');
+                    background-repeat: no-repeat;
+                    background-position: right 8px center;
+                    background-size: 20px;
+                    padding-right: 36px;
+                    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.15);
+                " 
+                onmouseover="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 2px 8px rgba(124, 58, 237, 0.25)';" 
+                onmouseout="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 2px 6px rgba(139, 92, 246, 0.15)';">
+                    <option value="" style="color: #9ca3af;">-- Pilih Level --</option>
+                    @foreach ($availableLevels as $level)
+                        <option value="{{ $level->name }}" style="color: #7c3aed;">{{ \App\Models\Level::displayName($level->name) }}</option>
                     @endforeach
                 </select>
 
@@ -354,6 +393,26 @@
         let currentAction = null;
         let currentUserId = null;
 
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function buildLevelOptions(selectedValue = '') {
+            let options = '<option value="">Select level (optional)</option>';
+
+            (window.__availableLevels || []).forEach(level => {
+                const selected = String(level.value) === String(selectedValue) ? 'selected' : '';
+                options += `<option value="${escapeHtml(level.value)}" ${selected}>${escapeHtml(level.label)}</option>`;
+            });
+
+            return options;
+        }
+
         function openActionModal(action, userId, userName) {
             currentAction = action;
             currentUserId = userId;
@@ -401,6 +460,12 @@
                                         </span>
                                     </div>
                                     <div>
+                                        <label style="display: block; margin-bottom: 5px; color: #666; font-size: 12px; font-weight: 600;">Level</label>
+                                        <span style="display: inline-block; background: #f3e8ff; color: #7c3aed; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+                                            ${user.level || '-'}
+                                        </span>
+                                    </div>
+                                    <div>
                                         <label style="display: block; margin-bottom: 5px; color: #666; font-size: 12px; font-weight: 600;">Status</label>
                                         <span style="display: inline-block; background: ${statusBg}; color: ${statusColor}; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
                                             ${statusText}
@@ -414,6 +479,50 @@
                                         <label style="display: block; margin-bottom: 5px; color: #666; font-size: 12px; font-weight: 600;">Address</label>
                                         <p style="font-size: 14px; font-weight: 500; white-space: pre-wrap;">${user.address}</p>
                                     </div>` : ''}
+                                    ${user.user_qr_code ? `
+                                        <div style="grid-column: 1 / -1; margin-top: 15px; padding-top: 15px; border-top: 2px solid #e5e7eb;">
+                                            <label style="display: block; margin-bottom: 12px; color: #666; font-size: 12px; font-weight: 600;">
+                                                <i class="bi bi-qr-code" style="margin-right: 6px; color: #f97316;"></i>Personal QR Code
+                                            </label>
+                                            <div style="display: grid; grid-template-columns: 180px 1fr; gap: 15px; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 12px;">
+                                                <div style="text-align: center;">
+                                                    <img src="${user.user_qr_image_url}" alt="Personal QR Code" style="max-width: 160px; width: 100%; height: auto;">
+                                                </div>
+                                                <div>
+                                                    <div style="background: #f0fdf4; border: 1px solid #16a34a; border-radius: 8px; padding: 10px; font-size: 12px; color: #166534; word-break: break-all; font-family: monospace; margin-bottom: 10px;">
+                                                        <strong>Code:</strong> ${user.user_qr_code}
+                                                    </div>
+                                                    <div style="font-size: 12px; color: #64748b; line-height: 1.6;">
+                                                        <div><strong>Status:</strong> ${user.user_qr_status || '-'}</div>
+                                                        <div><strong>Generated:</strong> ${user.user_qr_created_at || '-'}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    ${user.has_student ? `
+                                        <div style="grid-column: 1 / -1; margin-top: 15px; padding-top: 15px; border-top: 2px solid #e5e7eb;">
+                                            <label style="display: block; margin-bottom: 12px; color: #666; font-size: 12px; font-weight: 600;">
+                                                <i class="bi bi-qr-code-scan" style="margin-right: 6px; color: #2563eb;"></i>Student QR Code
+                                            </label>
+                                            <div style="display: grid; grid-template-columns: 180px 1fr; gap: 15px; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 12px;">
+                                                <div style="text-align: center;">
+                                                    <img src="${user.student_qr_image_url}" alt="Student QR Code" style="max-width: 160px; width: 100%; height: auto;">
+                                                </div>
+                                                <div>
+                                                    <div style="background: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 10px; font-size: 12px; color: #1d4ed8; word-break: break-all; font-family: monospace; margin-bottom: 10px;">
+                                                        <strong>Code:</strong> ${user.student_qr_code}
+                                                    </div>
+                                                    <div style="font-size: 12px; color: #64748b; line-height: 1.6;">
+                                                        <div><strong>NIM/ID:</strong> ${user.nim || '-'}</div>
+                                                        <div><strong>School:</strong> ${user.school || '-'}</div>
+                                                        <div><strong>Status:</strong> ${user.student_qr_status || '-'}</div>
+                                                        <div><strong>Generated:</strong> ${user.student_qr_created_at || '-'}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
                                 </div>
                             `;
                         }
@@ -472,6 +581,12 @@
                                         <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">Role <span style="color: red;">*</span></label>
                                         <select name="role_id" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" required>
                                             ${rolesOptions}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">Level <span style="color: #999; font-size: 11px;">(optional)</span></label>
+                                        <select name="level" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
+                                            ${buildLevelOptions(user.level || '')}
                                         </select>
                                     </div>
                                     <div>
@@ -638,6 +753,12 @@
                                     </select>
                                 </div>
                                 <div>
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">Level <span style="color: #999; font-size: 11px;">(optional)</span></label>
+                                    <select name="level" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
+                                        ${buildLevelOptions('')}
+                                    </select>
+                                </div>
+                                <div>
                                     <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px;">Status <span style="color: red;">*</span></label>
                                     <select name="status" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" required>
                                         <option value="active">Active</option>
@@ -774,17 +895,35 @@
             document.getElementById('bulkActionsContainer').style.display = 'none';
             document.getElementById('bulkActionSelect').value = '';
             document.getElementById('roleSelect').style.display = 'none';
+            document.getElementById('roleSelect').required = false;
+            document.getElementById('roleSelect').value = '';
+            document.getElementById('levelSelect').style.display = 'none';
+            document.getElementById('levelSelect').required = false;
+            document.getElementById('levelSelect').value = '';
         }
 
         document.getElementById('bulkActionSelect').addEventListener('change', function() {
             const roleSelect = document.getElementById('roleSelect');
+            const levelSelect = document.getElementById('levelSelect');
             if (this.value === 'change_role') {
                 roleSelect.style.display = 'block';
                 roleSelect.required = true;
+                levelSelect.style.display = 'none';
+                levelSelect.required = false;
+                levelSelect.value = '';
+            } else if (this.value === 'change_level') {
+                levelSelect.style.display = 'block';
+                levelSelect.required = true;
+                roleSelect.style.display = 'none';
+                roleSelect.required = false;
+                roleSelect.value = '';
             } else {
                 roleSelect.style.display = 'none';
                 roleSelect.required = false;
                 roleSelect.value = '';
+                levelSelect.style.display = 'none';
+                levelSelect.required = false;
+                levelSelect.value = '';
             }
         });
 
@@ -820,6 +959,14 @@
                     }
                     confirmMessage = `Change role for ${selectedIds.length} user(s)?`;
                     break;
+                case 'change_level':
+                    const level = document.getElementById('levelSelect').value;
+                    if (!level) {
+                        alert('Please select a level');
+                        return;
+                    }
+                    confirmMessage = `Change level for ${selectedIds.length} user(s)?`;
+                    break;
                 case 'delete':
                     confirmMessage = `Delete ${selectedIds.length} user(s)? This action cannot be undone.`;
                     break;
@@ -836,6 +983,10 @@
 
             if (action === 'change_role') {
                 payload.role_id = document.getElementById('roleSelect').value;
+            }
+
+            if (action === 'change_level') {
+                payload.level = document.getElementById('levelSelect').value;
             }
 
             const csrfToken = document.querySelector('meta[name="csrf-token"]');

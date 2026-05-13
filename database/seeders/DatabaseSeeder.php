@@ -24,9 +24,9 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleSeeder::class);
         $this->call(RoleFeatureSeeder::class);
 
-        $adminRoleId = Role::resolveByName(Role::ADMIN)?->id;
-        $studentRoleId = Role::resolveByName(Role::STUDENT)?->id;
-        $supervisorRoleId = Role::resolveByName(Role::INDUSTRY_SUPERVISOR)?->id;
+        $adminRoleId = Role::resolveByName(Role::KESISWAAN)?->id;
+        $studentRoleId = Role::resolveByName(Role::MURID)?->id;
+        $supervisorRoleId = Role::resolveByName(Role::GURU)?->id;
 
         // Create admin user if it doesn't exist
         User::firstOrCreate(

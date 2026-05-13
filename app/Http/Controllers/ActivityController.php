@@ -6,7 +6,7 @@ use App\Models\Absensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class AbsensiController extends Controller
+class ActivityController extends Controller
 {
     public function index()
     {

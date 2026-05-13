@@ -28,7 +28,8 @@ Route::prefix('v1')->group(function () {
         Route::put('/attendance/{attendance}', [AttendanceController::class, 'update']);
         Route::delete('/attendance/{attendance}', [AttendanceController::class, 'destroy']);
         Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
-        Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
+        // Check-out removed - only check-in is used
+        // Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
         Route::get('/attendance/report/{student}', [AttendanceController::class, 'report']);
 
         // Logbook routes

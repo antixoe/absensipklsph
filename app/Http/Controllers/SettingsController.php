@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,7 @@ class SettingsController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user->hasRole('admin');
+        $isAdmin = $user->hasRole(Role::KESISWAAN);
 
         // For non-admin users, show the enhanced student settings page
         if (!$isAdmin) {
@@ -111,7 +112,7 @@ class SettingsController extends Controller
      */
     public function trash()
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }
 
@@ -138,7 +139,7 @@ class SettingsController extends Controller
      */
     public function delete($id)
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }
 
@@ -164,7 +165,7 @@ class SettingsController extends Controller
      */
     public function restore($id)
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }
 
@@ -190,7 +191,7 @@ class SettingsController extends Controller
      */
     public function forceDelete($id)
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }
 
@@ -217,7 +218,7 @@ class SettingsController extends Controller
      */
     public function clearLogs(Request $request)
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }
 
@@ -238,7 +239,7 @@ class SettingsController extends Controller
      */
     public function emptyTrash(Request $request)
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }
 
@@ -259,7 +260,7 @@ class SettingsController extends Controller
      */
     public function exportLogs()
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }
 
@@ -375,6 +376,48 @@ class SettingsController extends Controller
             ->paginate(20);
 
         return view('settings.user-activity', compact('userLogs'));
+    }
+
+    /**
+     * Show access control page
+     */
+    public function accessControl()
+    {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $users = \App\Models\User::with('role', 'roleFeatures')->get();
+        $features = \App\Models\Feature::all();
+
+        return view('settings.access-control', compact('users', 'features'));
+    }
+
+    /**
+     * Update user access to features
+     */
+    public function updateUserAccess(Request $request, \App\Models\User $user)
+    {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'features' => ['array'],
+            'features.*' => ['exists:features,id'],
+        ]);
+
+        // Sync features for the user
+        $user->roleFeatures()->sync($validated['features'] ?? []);
+
+        ActivityLog::log(
+            'updated_user_access',
+            'user',
+            $user->id,
+            'Updated feature access for user ' . $user->name
+        );
+
+        return response()->json(['success' => true, 'message' => 'User access updated successfully']);
     }
 }
 

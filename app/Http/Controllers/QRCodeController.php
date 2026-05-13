@@ -17,8 +17,8 @@ class QRCodeController extends Controller
      */
     public function index()
     {
-        // Only admins/supervisors can manage QR codes
-        if (!auth()->user()->hasAnyRole(['admin', 'homeroom_teacher', 'head_of_department', 'industry_supervisor'])) {
+        // Only Kesiswaan can manage QR codes
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
 
@@ -34,8 +34,8 @@ class QRCodeController extends Controller
      */
     public function create()
     {
-        // Only admins/supervisors can create QR codes
-        if (!auth()->user()->hasAnyRole(['admin', 'homeroom_teacher', 'head_of_department', 'industry_supervisor'])) {
+        // Only Kesiswaan can create QR codes
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
 
@@ -47,8 +47,8 @@ class QRCodeController extends Controller
      */
     public function store(Request $request)
     {
-        // Only admins/supervisors can create QR codes
-        if (!auth()->user()->hasAnyRole(['admin', 'homeroom_teacher', 'head_of_department', 'industry_supervisor'])) {
+        // Only Kesiswaan can create QR codes
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             if (request()->header('X-Requested-With') === 'XMLHttpRequest') {
                 return response()->json(['error' => 'Unauthorized access.'], 403);
             }
@@ -107,8 +107,8 @@ class QRCodeController extends Controller
      */
     public function show(QRCode $qrCode)
     {
-        // Only admins/supervisors can view details
-        if (!auth()->user()->hasAnyRole(['admin', 'homeroom_teacher', 'head_of_department', 'industry_supervisor'])) {
+        // Only Kesiswaan, Guru, and Wali Kelas can view details
+        if (!auth()->user()->hasAnyRole([Role::KESISWAAN, Role::GURU, Role::WALI_KELAS])) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
 
@@ -140,60 +140,32 @@ class QRCodeController extends Controller
     }
 
     /**
-     * Show QR code scanner page for students.
+     * Show QR code scanner page for teachers to scan student QR codes.
      */
-    public function scanner()
+    public function teacherScanner()
     {
-        $currentUser = Auth::user();
-        $isCheckoutPage = request()->routeIs('absen.pulang');
-
-        if (!$currentUser->hasRole(Role::STUDENT)) {
-            return redirect()->route('dashboard')->with('error', 'You must be registered as a student to scan QR codes.');
-        }
-
-        // Check if current user is a student
-        $student = Student::where('user_id', $currentUser->id)->first();
-
-        if (!$student) {
-            return redirect()->route('dashboard')->with('error', 'You must be registered as a student to scan QR codes.');
+        // Only Guru (teachers) and Wali Kelas (homeroom teachers) can scan QR codes
+        if (!auth()->user()->hasAnyRole([Role::GURU, Role::WALI_KELAS])) {
+            return redirect()->route('dashboard')->with('error', 'Only teachers can scan QR codes.');
         }
 
         // Get available QR codes for today
         $todayQRCodes = QRCode::whereDate('qr_date', Carbon::today())
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
-            ->first();
+            ->get();
 
-        $todayAbsence = null;
-        if ($isCheckoutPage) {
-            $todayAbsence = Absence::where('student_id', $student->id)
-                ->whereDate('absence_date', Carbon::today())
-                ->latest('scanned_qr_at')
-                ->first();
-        } elseif ($todayQRCodes) {
-            $todayAbsence = Absence::where('student_id', $student->id)
-                ->whereDate('absence_date', Carbon::today())
-                ->where('qr_code_id', $todayQRCodes->id)
-                ->latest('scanned_qr_at')
-                ->first();
-        }
-
-        if ($isCheckoutPage && $todayAbsence && $todayAbsence->scanned_qr_out_at) {
-            return redirect()->route('dashboard')
-                ->with('success', 'Checkout already recorded today.');
-        }
-
-        return view('qrcode.scanner', compact('student', 'todayQRCodes', 'todayAbsence'));
+        return view('qrcode.teacher-scanner', compact('todayQRCodes'));
     }
 
     /**
-     * Process QR code scan with selfie and location.
+     * Process QR code scan (teachers only - students cannot scan).
      */
     public function scan(Request $request)
     {
         $validated = $request->validate([
             'code' => 'required|string',
-            'selfie' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            'selfie' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'ip_address' => 'nullable|string',
@@ -202,20 +174,30 @@ class QRCodeController extends Controller
 
         $currentUser = Auth::user();
 
-        if (!$currentUser->hasRole(Role::STUDENT)) {
+        // Only teachers (Guru) and homeroom teachers (Wali Kelas) can scan QR codes
+        if (!$currentUser->hasAnyRole([Role::GURU, Role::WALI_KELAS])) {
             return response()->json([
                 'success' => false,
-                'message' => 'You must be registered as a student to scan QR codes.'
+                'message' => 'Only teachers can scan student QR codes. Students cannot mark their own attendance.'
             ], 403);
         }
 
-        $student = Student::where('user_id', $currentUser->id)->first();
+        // Teacher scanning student QR code - create attendance for that student
+        return $this->teacherScanQRCode($request, $validated);
+    }
 
-        if (!$student) {
+    /**
+     * Teacher scans student QR code to record attendance.
+     */
+    private function teacherScanQRCode(Request $request, array $validated)
+    {
+        $currentUser = Auth::user();
+
+        if (!$currentUser->hasAnyRole([Role::GURU, Role::WALI_KELAS])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Student record not found.'
-            ], 400);
+                'message' => 'Only teachers can scan student QR codes.'
+            ], 403);
         }
 
         // Find the QR code
@@ -224,7 +206,7 @@ class QRCodeController extends Controller
         if (!$qrCode) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid QR code. Please try again.'
+                'message' => 'Invalid QR code. This code does not exist in the system.'
             ], 404);
         }
 
@@ -237,106 +219,49 @@ class QRCodeController extends Controller
         }
 
         try {
-            // Check if QR code is for today
-            if ($qrCode->qr_date->toDateString() !== Carbon::today()->toDateString()) {
+            // Find student by QR code ID - student QR codes are linked by qr_code_id
+            $student = Student::where('qr_code_id', $qrCode->id)->first();
+
+            if (!$student) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'This QR code is for ' . $qrCode->qr_date->format('M d, Y \\a\\t H:i') . ', not today.'
+                    'message' => 'No student found for this QR code. The QR code may not be assigned to a student.'
+                ], 404);
+            }
+
+            // Check if attendance already recorded for today
+            $todayAbsence = Absence::where('student_id', $student->id)
+                ->whereDate('absence_date', Carbon::today())
+                ->first();
+
+            if ($todayAbsence) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Attendance already recorded for ' . $student->user->name . ' today.'
                 ], 400);
             }
 
-            // Check if student already marked attendance via this QR code today
-            $scanMode = $validated['mode'] ?? 'checkin';
-            $existingAbsence = $scanMode === 'checkout'
-                ? Absence::where('student_id', $student->id)
-                    ->whereDate('absence_date', Carbon::today())
-                    ->latest('scanned_qr_at')
-                    ->first()
-                : Absence::where('student_id', $student->id)
-                    ->where('qr_code_id', $qrCode->id)
-                    ->whereDate('absence_date', Carbon::today())
-                    ->first();
-
-            if ($existingAbsence) {
-                if ($existingAbsence->scanned_qr_out_at) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'You have already checked out today at ' . $existingAbsence->scanned_qr_out_at->format('H:i:s')
-                    ], 400);
-                }
-
-                if ($scanMode === 'checkout') {
-                    $existingAbsence->update([
-                        'scanned_qr_out_at' => Carbon::now(),
-                    ]);
-
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Checkout marked successfully with QR, selfie, and location!',
-                        'data' => [
-                            'student_name' => $currentUser->name,
-                            'time' => $existingAbsence->scanned_qr_out_at->format('H:i:s'),
-                            'date' => $existingAbsence->scanned_qr_out_at->format('M d, Y'),
-                            'action' => 'checkout',
-                        ]
-                    ]);
-                }
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You have already checked in today. Please use the checkout flow to record pulang.'
-                ], 400);
-            }
-
-            if ($scanMode === 'checkout') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You must check in first before you can scan checkout.'
-                ], 400);
-            }
-
-            // Save selfie image
-            $selfiePath = null;
-            if ($request->hasFile('selfie')) {
-                $file = $request->file('selfie');
-                $filename = 'selfie_' . $student->id . '_' . Carbon::now()->timestamp . '.' . $file->getClientOriginalExtension();
-                $selfiePath = $file->storeAs('attendance/selfies', $filename, 'public');
-            }
-
-            // Create absence record
+            // Create attendance record
             $absence = Absence::create([
                 'student_id' => $student->id,
-                'absence_date' => Carbon::now(),
-                'qr_code_id' => $qrCode->id,
+                'absence_date' => Carbon::today(),
                 'scanned_qr_at' => Carbon::now(),
-                'status' => 'approved', // QR code scans are auto-approved
-                'approved_at' => Carbon::now(),
-                'approved_by' => $qrCode->created_by,
-                'location_name' => 'Scanned via QR + Selfie + Location',
-                'selfie_path' => $selfiePath,
-                'ip_address' => $validated['ip_address'] ?? null,
+                'status' => 'present',
+                'recorded_by' => $currentUser->id,
+                'notes' => 'Scanned by ' . $currentUser->name . ' using QR code',
+                'latitude' => $validated['latitude'] ?? null,
+                'longitude' => $validated['longitude'] ?? null,
             ]);
-
-            // Store location if provided
-            if ($validated['latitude'] !== null && $validated['longitude'] !== null) {
-                $absence->update([
-                    'latitude' => $validated['latitude'],
-                    'longitude' => $validated['longitude'],
-                ]);
-            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Check-in marked successfully with QR, selfie, and location!',
-                'data' => [
-                    'student_name' => $currentUser->name,
-                    'time' => $absence->scanned_qr_at->format('H:i:s'),
-                    'date' => $absence->scanned_qr_at->format('M d, Y'),
-                    'action' => 'checkin',
-                ]
+                'message' => 'Attendance recorded for ' . $student->user->name,
+                'student_name' => $student->user->name,
+                'student_id' => $student->id,
             ]);
+
         } catch (\Exception $e) {
-            \Log::error('QR Code scan error: ' . $e->getMessage());
+            \Log::error('Teacher QR Code scan error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error processing QR code: ' . $e->getMessage()
@@ -349,8 +274,8 @@ class QRCodeController extends Controller
      */
     public function deactivate(QRCode $qrCode)
     {
-        // Only admins/supervisors can deactivate
-        if (!auth()->user()->hasAnyRole(['admin', 'homeroom_teacher', 'head_of_department', 'industry_supervisor'])) {
+        // Only Kesiswaan can deactivate
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return response()->json(['error' => 'Unauthorized access.'], 403);
         }
 
@@ -369,8 +294,8 @@ class QRCodeController extends Controller
      */
     public function downloadQRImage(QRCode $qrCode)
     {
-        // Only admins/supervisors can download
-        if (!auth()->user()->hasAnyRole(['admin', 'homeroom_teacher', 'head_of_department', 'industry_supervisor'])) {
+        // Only Kesiswaan can download
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
 

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Models\Level;
 use App\Imports\UsersImport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -16,8 +18,8 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        // Only admin can manage users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can manage users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
@@ -45,8 +47,9 @@ class UserController extends Controller
         // Order by newest users first
         $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
         $roles = Role::all();
+        $availableLevels = Level::where('status', 'active')->orderBy('name')->get();
 
-        return view('admin.users.index', compact('users', 'roles'));
+        return view('admin.users.index', compact('users', 'roles', 'availableLevels'));
     }
 
     /**
@@ -54,13 +57,14 @@ class UserController extends Controller
      */
     public function create()
     {
-        // Only admin can create users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can create users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
         $roles = Role::all();
-        return view('admin.users.create', compact('roles'));
+        $availableLevels = Level::where('status', 'active')->orderBy('name')->get();
+        return view('admin.users.create', compact('roles', 'availableLevels'));
     }
 
     /**
@@ -68,8 +72,8 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        // Only admin can create users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can create users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
@@ -84,6 +88,12 @@ class UserController extends Controller
                 'phone' => ['nullable', 'string', 'max:20'],
                 'address' => ['nullable', 'string', 'max:255'],
                 'role_id' => ['required', 'exists:roles,id'],
+                'level' => [
+                    'nullable',
+                    'string',
+                    'max:100',
+                    Rule::in(Level::where('status', 'active')->pluck('name')->all()),
+                ],
                 'status' => ['required', 'in:active,inactive'],
             ]);
 
@@ -119,8 +129,8 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        // Only admin can view user details
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can view user details
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
@@ -133,14 +143,15 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        // Only admin can edit users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can edit users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
         $roles = Role::all();
+        $availableLevels = Level::where('status', 'active')->orderBy('name')->get();
         $user->load('role');
-        return view('admin.users.edit', compact('user', 'roles'));
+        return view('admin.users.edit', compact('user', 'roles', 'availableLevels'));
     }
 
     /**
@@ -148,8 +159,8 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        // Only admin can update users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can update users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
@@ -160,6 +171,12 @@ class UserController extends Controller
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:255'],
             'role_id' => ['required', 'exists:roles,id'],
+            'level' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::in(Level::where('status', 'active')->pluck('name')->all()),
+            ],
             'status' => ['required', 'in:active,inactive'],
         ]);
 
@@ -180,8 +197,8 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        // Only admin can delete users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can delete users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
@@ -196,8 +213,8 @@ class UserController extends Controller
      */
     public function restore($userId)
     {
-        // Only admin can restore users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can restore users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
@@ -213,8 +230,8 @@ class UserController extends Controller
      */
     public function forceDelete($userId)
     {
-        // Only admin can permanently delete users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can permanently delete users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
@@ -231,8 +248,8 @@ class UserController extends Controller
      */
     public function trash(Request $request)
     {
-        // Only admin can view trash
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can view trash
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
@@ -259,8 +276,8 @@ class UserController extends Controller
      */
     public function importForm()
     {
-        // Only admin can import users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can import users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
@@ -272,8 +289,8 @@ class UserController extends Controller
      */
     public function import(Request $request)
     {
-        // Only admin can import users
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        // Only Kesiswaan (admin) can import users
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
@@ -316,25 +333,57 @@ class UserController extends Controller
      */
     public function getDetails(User $user)
     {
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
-        $user->load('role');
+        $user->load('role', 'userQrCode', 'student.qrCode');
+
+        $userData = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone ?? '-',
+            'address' => $user->address,
+            'role' => Role::displayName($user->role->name ?? 'N/A'),
+            'level' => $user->level ? Level::displayName($user->level) : '-',
+            'status' => $user->status,
+            'created_at' => $user->created_at->format('M d, Y H:i'),
+            'updated_at' => $user->updated_at->format('M d, Y H:i'),
+            'user_qr_code' => null,
+            'user_qr_image_url' => null,
+            'user_qr_status' => null,
+            'user_qr_created_at' => null,
+            'student_qr_code' => null,
+            'student_qr_image_url' => null,
+            'student_qr_status' => null,
+            'student_qr_created_at' => null,
+            'nim' => null,
+            'school' => null,
+            'has_student' => false,
+        ];
+
+        if ($user->userQrCode) {
+            $userData['user_qr_code'] = $user->userQrCode->code;
+            $userData['user_qr_image_url'] = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($user->userQrCode->code);
+            $userData['user_qr_status'] = $user->userQrCode->status;
+            $userData['user_qr_created_at'] = optional($user->userQrCode->created_at)->format('M d, Y H:i');
+        }
+
+        // Add student QR code info if user has a student profile
+        if ($user->student && $user->student->qrCode) {
+            $userData['has_student'] = true;
+            $userData['student_qr_code'] = $user->student->qrCode->code;
+            $userData['student_qr_image_url'] = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($user->student->qrCode->code);
+            $userData['student_qr_status'] = $user->student->qrCode->status;
+            $userData['student_qr_created_at'] = optional($user->student->qrCode->created_at)->format('M d, Y H:i');
+            $userData['nim'] = $user->student->nim;
+            $userData['school'] = $user->student->school;
+        }
 
         return response()->json([
             'success' => true,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone ?? '-',
-                'address' => $user->address,
-                'role' => Role::displayName($user->role->name ?? 'N/A'),
-                'status' => $user->status,
-                'created_at' => $user->created_at->format('M d, Y H:i'),
-                'updated_at' => $user->updated_at->format('M d, Y H:i'),
-            ]
+            'user' => $userData
         ]);
     }
 
@@ -343,11 +392,11 @@ class UserController extends Controller
      */
     public function getEditData(User $user)
     {
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403, 'Unauthorized access');
         }
 
-        $user->load('role');
+        $user->load('role', 'userQrCode', 'student.qrCode');
         $roles = Role::all();
 
         return response()->json([
@@ -359,6 +408,7 @@ class UserController extends Controller
                 'phone' => $user->phone,
                 'address' => $user->address,
                 'role_id' => $user->role_id,
+                'level' => $user->level,
                 'status' => $user->status,
             ],
             'roles' => $roles->map(fn($role) => [
@@ -373,7 +423,7 @@ class UserController extends Controller
      */
     public function getRoles()
     {
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -393,7 +443,7 @@ class UserController extends Controller
      */
     public function updateViaModal(Request $request, User $user)
     {
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -404,6 +454,12 @@ class UserController extends Controller
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:255'],
             'role_id' => ['required', 'exists:roles,id'],
+            'level' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::in(Level::where('status', 'active')->pluck('name')->all()),
+            ],
             'status' => ['required', 'in:active,inactive'],
         ]);
 
@@ -426,15 +482,22 @@ class UserController extends Controller
      */
     public function bulkAction(Request $request)
     {
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $validated = $request->validate([
-            'action' => ['required', 'in:delete,activate,deactivate,change_role'],
+            'action' => ['required', 'in:delete,activate,deactivate,change_role,change_level'],
             'user_ids' => ['required', 'array', 'min:1'],
             'user_ids.*' => ['integer', 'exists:users,id'],
-            'role_id' => ['nullable', 'exists:roles,id'],
+            'role_id' => ['required_if:action,change_role', 'nullable', 'exists:roles,id'],
+            'level' => [
+                'required_if:action,change_level',
+                'nullable',
+                'string',
+                'max:100',
+                Rule::in(Level::where('status', 'active')->pluck('name')->all()),
+            ],
         ]);
 
         try {
@@ -474,6 +537,11 @@ class UserController extends Controller
                             $count++;
                         }
                         break;
+
+                    case 'change_level':
+                        $user->update(['level' => $validated['level'] ?? null]);
+                        $count++;
+                        break;
                 }
             }
 
@@ -482,6 +550,7 @@ class UserController extends Controller
                 'activate' => 'activated',
                 'deactivate' => 'deactivated',
                 'change_role' => 'updated',
+                'change_level' => 'updated',
                 default => 'processed'
             };
 

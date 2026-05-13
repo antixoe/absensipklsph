@@ -144,7 +144,7 @@ class AttendanceController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->hasRole(Role::STUDENT)) {
+        if (!$user->hasRole(Role::MURID)) {
             return redirect()->route('dashboard')->with('error', 'Only students can access attendance records.');
         }
 

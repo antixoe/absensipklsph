@@ -32,6 +32,7 @@ class User extends Authenticatable
         'address',
         'status',
         'role_id',
+        'level',
     ];
 
     /**
@@ -82,12 +83,21 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the personal QR code associated with this user.
+     */
+    public function userQrCode(): BelongsTo
+    {
+        return $this->belongsTo(QRCode::class, 'user_qr_code_id');
+    }
+
+    /**
      * Keep student accounts usable even if the profile row was not created elsewhere.
      */
     protected static function booted(): void
     {
         static::saved(function (User $user) {
             $user->ensureStudentProfile();
+            $user->ensureUserQrCode();
         });
     }
 
@@ -96,7 +106,7 @@ class User extends Authenticatable
      */
     public function ensureStudentProfile(): ?Student
     {
-        if (!$this->hasRole(Role::STUDENT)) {
+        if (!$this->hasRole(Role::MURID)) {
             return null;
         }
 
@@ -114,6 +124,24 @@ class User extends Authenticatable
                 'status' => 'active',
             ]
         );
+    }
+
+    /**
+     * Ensure a personal QR code exists for this user.
+     */
+    public function ensureUserQrCode(): ?QRCode
+    {
+        if ($this->userQrCode) {
+            return $this->userQrCode;
+        }
+
+        $qrCode = QRCode::createUserQRCode($this->id, $this->name);
+
+        self::whereKey($this->id)->update(['user_qr_code_id' => $qrCode->id]);
+        $this->setAttribute('user_qr_code_id', $qrCode->id);
+        $this->setRelation('userQrCode', $qrCode);
+
+        return $qrCode;
     }
 
     /**

@@ -16,15 +16,15 @@ use Carbon\Carbon;
 class AbsenceController extends Controller
 {
     /**
-     * Show the absence page with list of students.
+     * Show the student's own attendance (read-only).
      */
     public function index()
     {
         $today = Carbon::today();
         $currentUser = Auth::user();
 
-        if (!$currentUser->hasRole(Role::STUDENT)) {
-            return redirect()->route('dashboard')->with('error', 'Only students can submit absences.');
+        if (!$currentUser->hasRole(Role::MURID)) {
+            return redirect()->route('dashboard')->with('error', 'Only students can view their attendance.');
         }
 
         $currentUserStudent = Student::where('user_id', $currentUser->id)->first();
@@ -33,187 +33,28 @@ class AbsenceController extends Controller
             return redirect()->route('dashboard')->with('error', 'Student profile not found.');
         }
 
-        $todayQRCodes = QRCode::whereDate('qr_date', $today)
-            ->where('status', 'active')
-            ->orderBy('created_at', 'desc')
-            ->first();
+        // Get all attendance records for this student (read-only view)
+        $attendanceRecords = Absence::where('student_id', $currentUserStudent->id)
+            ->orderBy('absence_date', 'desc')
+            ->paginate(20);
 
-        $todayAbsence = null;
-
+        // Get today's attendance if exists
         $todayAbsence = Absence::where('student_id', $currentUserStudent->id)
             ->whereDate('absence_date', $today)
             ->first();
 
-        return view('absence.index', compact('today', 'currentUserStudent', 'todayAbsence', 'todayQRCodes'));
+        return view('absence.student-view', compact('currentUserStudent', 'attendanceRecords', 'todayAbsence', 'today'));
     }
 
     /**
-     * Store absence records.
+     * Store absence records (DISABLED FOR STUDENTS - Only teachers/scanners can mark attendance).
      */
     public function store(Request $request)
     {
-        $currentUser = Auth::user();
-        if (!$currentUser->hasRole(Role::STUDENT)) {
-            return response()->json([
-                'message' => 'Only students can submit absences.'
-            ], 403);
-        }
-
-        $currentUserStudent = Student::where('user_id', $currentUser->id)->first();
-        if (!$currentUserStudent) {
-            return response()->json([
-                'message' => 'Student profile not found.'
-            ], 404);
-        }
-        $currentUserStudent->loadMissing('user');
-
-        // Check if this is a QR code submission (method field takes priority)
-        $isQRSubmission = $request->input('method') === 'qr';
-        
-        try {
-            if ($isQRSubmission) {
-                // QR code submission - selfie is optional but may be included
-                $validated = $request->validate([
-                    'qr_code' => 'required|string',
-                    'selfie' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-                    'latitude' => 'nullable|numeric',
-                    'longitude' => 'nullable|numeric',
-                    'ip_address' => 'nullable|string',
-                    'location_name' => 'nullable|string',
-                    'notes' => 'nullable|string',
-                    'absence_date' => 'nullable|date',
-                    'absence_time' => 'nullable|date_format:H:i',
-                ]);
-            } else {
-                // Selfie submission requires selfie image
-                $validated = $request->validate([
-                    'selfie' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-                    'latitude' => 'nullable|numeric',
-                    'longitude' => 'nullable|numeric',
-                    'ip_address' => 'nullable|string',
-                    'location_name' => 'nullable|string',
-                    'notes' => 'nullable|string',
-                    'absence_date' => 'nullable|date',
-                    'absence_time' => 'nullable|date_format:H:i',
-                ]);
-            }
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Absence validation error', [
-                'errors' => $e->errors(),
-                'request_data' => $request->except(['selfie', '_token']),
-                'method' => $request->input('method'),
-                'has_qr_code' => $request->has('qr_code'),
-                'has_selfie' => $request->hasFile('selfie'),
-            ]);
-            return response()->json([
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-        }
-
-        try {
-            // Use real-time current date and time
-            $absenceDatetime = Carbon::now();
-            $studentIds = [$currentUserStudent->id];
-            $selfieFilename = null;
-            $alreadyExists = false;
-
-            // Check if student already has a record for this date and time
-            $existingAbsence = Absence::where('student_id', $currentUserStudent->id)
-                ->whereDate('absence_date', $absenceDatetime->toDateString())
-                ->first();
-
-            if ($existingAbsence) {
-                $alreadyExists = true;
-            }
-
-            // Store the selfie image if provided
-            if ($request->hasFile('selfie')) {
-                $file = $request->file('selfie');
-                $selfieFilename = 'selfie_' . time() . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('absences', $selfieFilename, 'public');
-            }
-
-            // Create absence records for each selected student
-            foreach ($studentIds as $studentId) {
-                $updateData = [
-                    'ip_address' => $validated['ip_address'] ?? null,
-                    'location_name' => $validated['location_name'] ?? null,
-                    'latitude' => $validated['latitude'] ?? null,
-                    'longitude' => $validated['longitude'] ?? null,
-                    'notes' => $validated['notes'] ?? null,
-                    'status' => 'approved',
-                ];
-                
-                // Add appropriate submission method data
-                if ($isQRSubmission) {
-                    $updateData['qr_code'] = $validated['qr_code'] ?? null;
-                    $updateData['scanned_qr_at'] = Carbon::now();
-                    // Also store selfie if provided with QR submission
-                    if ($selfieFilename) {
-                        $updateData['selfie_path'] = 'absences/' . $selfieFilename;
-                    }
-                } else {
-                    $updateData['selfie_path'] = $selfieFilename ? 'absences/' . $selfieFilename : null;
-                }
-                
-                $absence = Absence::updateOrCreate(
-                    [
-                        'student_id' => $studentId,
-                        'absence_date' => $absenceDatetime,
-                    ],
-                    $updateData
-                );
-
-                // Log the activity with detailed information
-                $method = $isQRSubmission ? 'QR Code' : 'Selfie';
-                $logData = [
-                    'submission_method' => $method,
-                    'student_id' => $studentId,
-                    'student_name' => $currentUserStudent->user->name ?? 'Unknown',
-                    'qr_code_used' => $isQRSubmission ? ($validated['qr_code'] ?? 'N/A') : 'N/A',
-                    'selfie_saved' => $selfieFilename ? true : false,
-                    'location_name' => $validated['location_name'] ?? 'Not provided',
-                    'ip_address' => $validated['ip_address'] ?? 'Not provided',
-                    'latitude' => $validated['latitude'] ?? null,
-                    'longitude' => $validated['longitude'] ?? null,
-                ];
-                
-                ActivityLoggerService::log(
-                    'submitted_absence',
-                    'absence',
-                    $absence->id,
-                    "Submitted absence via $method for " . (optional($absenceDatetime)->format('Y-m-d H:i') ?? 'N/A'),
-                    [],
-                    $logData
-                );
-                
-                \Log::info('Absence submitted', [
-                    'user_id' => Auth::id(),
-                    'student_id' => $studentId,
-                    'absence_id' => $absence->id,
-                    'method' => $method,
-                    'data' => $logData
-                ]);
-
-                // Send notifications to admins and teachers
-                $this->sendAbsenceNotifications($absence, $currentUserStudent, $isQRSubmission);
-            }
-
-            $successMessage = $alreadyExists 
-                ? 'Your absence record has been updated successfully!' 
-                : 'Your absence has been recorded successfully!';
-
-            return redirect()->route('absence.index')->with('success', $successMessage);
-        } catch (\Exception $e) {
-            \Log::error('Absence submission error: ' . $e->getMessage(), ['exception' => $e]);
-            return response()->json([
-                'message' => 'An error occurred while saving your absence: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Students cannot mark their own attendance. Teachers scan QR codes to record attendance.'
+        ], 403);
     }
-
-
 
     /**
      * Show all absences for all students.
@@ -222,11 +63,10 @@ class AbsenceController extends Controller
     {
         $currentUser = Auth::user();
         if (!$currentUser->hasAnyRole([
-            Role::ADMIN,
-            Role::HOMEROOM_TEACHER,
-            Role::HEAD_OF_DEPARTMENT,
-            Role::INDUSTRY_SUPERVISOR,
-            Role::SCHOOL_PRINCIPAL,
+            Role::KESISWAAN,
+            Role::WALI_KELAS,
+            Role::KURIKULUM,
+            Role::GURU,
         ])) {
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
@@ -302,10 +142,10 @@ class AbsenceController extends Controller
             
             // Get all admins and teachers
             $notifiableRoles = [
-                Role::ADMIN,
-                Role::HOMEROOM_TEACHER,
-                Role::HEAD_OF_DEPARTMENT,
-                Role::INDUSTRY_SUPERVISOR
+                Role::KESISWAAN,
+                Role::WALI_KELAS,
+                Role::KURIKULUM,
+                Role::GURU
             ];
             
             // Get users with these roles

@@ -10,22 +10,33 @@ class RoleFeatureSeeder extends Seeder
 {
     public function run(): void
     {
-        // Define features
+        // Clear existing features and role features
+        \DB::table('role_features')->delete();
+        Feature::query()->delete();
+
+        // Define features for the new system
         $features = [
-            ['name' => 'Check-in/Check-out', 'slug' => 'checkin_checkout', 'description' => 'Ability to check-in and check-out attendance'],
-            ['name' => 'Fill Daily Logbook', 'slug' => 'fill_logbook', 'description' => 'Ability to fill daily logbook entries'],
-            ['name' => 'View Guidance Notes', 'slug' => 'view_guidance', 'description' => 'Ability to view guidance notes'],
-            ['name' => 'Validate Attendance', 'slug' => 'validate_attendance', 'description' => 'Ability to validate attendance records'],
-            ['name' => 'Validate Logbook', 'slug' => 'validate_logbook', 'description' => 'Ability to validate logbook entries'],
-            ['name' => 'Provide Guidance', 'slug' => 'provide_guidance', 'description' => 'Ability to provide guidance notes'],
-            ['name' => 'Weekly Logbook Review', 'slug' => 'weekly_review', 'description' => 'Ability to review logbooks weekly'],
-            ['name' => 'Department Filtering', 'slug' => 'department_filter', 'description' => 'Ability to filter by department'],
-            ['name' => 'Class Filtering', 'slug' => 'class_filter', 'description' => 'Ability to filter by class'],
-            ['name' => 'View All Data', 'slug' => 'view_all_data', 'description' => 'Ability to view all school data'],
-            ['name' => 'Manage Roles', 'slug' => 'manage_roles', 'description' => 'Ability to manage roles and permissions'],
+            // Admin/Kesiswaan features
+            ['name' => 'Create QR Code', 'slug' => 'create_qrcode', 'description' => 'Ability to create and manage QR codes'],
+            ['name' => 'Manage System', 'slug' => 'manage_system', 'description' => 'Ability to manage system settings'],
             ['name' => 'Manage Users', 'slug' => 'manage_users', 'description' => 'Ability to manage users'],
+            ['name' => 'Manage Roles', 'slug' => 'manage_roles', 'description' => 'Ability to manage roles and permissions'],
+            
+            // Teacher/Guru features
+            ['name' => 'Scan QR Code', 'slug' => 'scan_qrcode', 'description' => 'Ability to scan student QR codes'],
+            ['name' => 'Record Attendance', 'slug' => 'record_attendance', 'description' => 'Ability to record student attendance'],
+            ['name' => 'View Attendance', 'slug' => 'view_attendance', 'description' => 'Ability to view attendance records'],
+            
+            // Student/Murid features
+            ['name' => 'View QR Code', 'slug' => 'view_qrcode', 'description' => 'Ability to view personal QR code'],
+            ['name' => 'View Attendance Status', 'slug' => 'view_attendance_status', 'description' => 'Ability to view personal attendance status'],
+            
+            // Wali Kelas features
+            ['name' => 'View Class Attendance', 'slug' => 'view_class_attendance', 'description' => 'Ability to view class attendance'],
+            
+            // Kurikulum features
+            ['name' => 'Manage Curriculum', 'slug' => 'manage_curriculum', 'description' => 'Ability to manage curriculum'],
             ['name' => 'View Reports', 'slug' => 'view_reports', 'description' => 'Ability to view reports'],
-            ['name' => 'Manage Activities', 'slug' => 'manage_activities', 'description' => 'Ability to manage activities'],
         ];
 
         foreach ($features as $featureData) {
@@ -37,53 +48,37 @@ class RoleFeatureSeeder extends Seeder
 
         // Define roles and their associated features
         $roleFeatures = [
-            Role::STUDENT => [
-                'checkin_checkout',
-                'fill_logbook',
-                'view_guidance',
-            ],
-            Role::INDUSTRY_SUPERVISOR => [
-                'validate_attendance',
-                'validate_logbook',
-                'provide_guidance',
-                'view_reports',
-            ],
-            Role::COMPANY_MENTOR => [
-                'validate_attendance',
-                'validate_logbook',
-                'provide_guidance',
-                'view_reports',
-            ],
-            Role::SCHOOL_SUPERVISOR => [
-                'provide_guidance',
-                'class_filter',
-                'view_reports',
-            ],
-            Role::HEAD_OF_DEPARTMENT => [
-                'weekly_review',
-                'department_filter',
-                'view_reports',
-            ],
-            Role::HOMEROOM_TEACHER => [
-                'class_filter',
-                'view_reports',
-            ],
-            Role::SCHOOL_PRINCIPAL => [
-                'view_all_data',
-                'view_reports',
-            ],
-            Role::STUDENT_AFFAIRS => [
-                'view_all_data',
-                'class_filter',
-                'view_reports',
-            ],
-            Role::ADMIN => [
-                'manage_roles',
+            Role::KESISWAAN => [
+                'create_qrcode',
+                'manage_system',
                 'manage_users',
-                'view_all_data',
-                'department_filter',
-                'class_filter',
+                'manage_roles',
                 'view_reports',
+            ],
+            Role::KURIKULUM => [
+                'manage_curriculum',
+                'view_reports',
+                'view_class_attendance',
+            ],
+            Role::WALI_KELAS => [
+                'view_class_attendance',
+                'view_reports',
+            ],
+            Role::GURU => [
+                'scan_qrcode',
+                'record_attendance',
+                'view_attendance',
+                'view_class_attendance',
+            ],
+            Role::MURID => [
+                'view_qrcode',
+                'view_attendance_status',
+            ],
+            Role::KETUA_KELAS => [
+                'view_class_attendance',
+            ],
+            Role::SEKRETARIS_KELAS => [
+                'view_class_attendance',
             ],
         ];
 
@@ -97,8 +92,11 @@ class RoleFeatureSeeder extends Seeder
             // Get feature IDs for the slugs
             $featureIds = Feature::whereIn('slug', $featureSlugs)->pluck('id')->toArray();
 
-            // Sync features (this will attach new ones and detach old ones)
+            // Sync features
             $role->features()->sync($featureIds);
         }
+
+        echo "✓ Features assigned to roles successfully!\n";
     }
 }
+

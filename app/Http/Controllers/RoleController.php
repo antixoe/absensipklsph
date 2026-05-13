@@ -17,14 +17,13 @@ class RoleController extends Controller
     public function index()
     {
         // Only admin can manage roles
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403);
         }
 
-        $roles = Role::with('features')->get();
-        $features = Feature::all();
+        $roles = Role::all();
 
-        return view('admin.roles.index', compact('roles', 'features'));
+        return view('admin.roles.index', compact('roles'));
     }
 
     /**
@@ -33,12 +32,11 @@ class RoleController extends Controller
     public function create()
     {
         // Only admin can manage roles
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403);
         }
 
-        $features = Feature::all();
-        return view('admin.roles.create', compact('features'));
+        return view('admin.roles.create');
     }
 
     /**
@@ -47,26 +45,19 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         // Only admin can manage roles
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403);
         }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
             'description' => ['nullable', 'string', 'max:500'],
-            'features' => ['array'],
-            'features.*' => ['exists:features,id'],
         ]);
 
-        $role = Role::create([
+        Role::create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
         ]);
-
-        // Attach selected features
-        if (!empty($validated['features'])) {
-            $role->features()->sync($validated['features']);
-        }
 
         return redirect()->route('admin.roles')
             ->with('success', 'Role created successfully!');
@@ -78,7 +69,7 @@ class RoleController extends Controller
     public function edit(Role $role)
     {
         // Only admin can manage roles
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403);
         }
 
@@ -92,15 +83,13 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         // Only admin can manage roles
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403);
         }
 
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255', Rule::unique('roles', 'name')->ignore($role->id)],
             'description' => ['nullable', 'string', 'max:500'],
-            'features' => ['array'],
-            'features.*' => ['exists:features,id'],
         ]);
 
         if ($validator->fails()) {
@@ -117,9 +106,6 @@ class RoleController extends Controller
             'description' => $validated['description'] ?? null,
         ]);
 
-        // Sync features (attach new ones, detach removed ones)
-        $role->features()->sync($validated['features'] ?? []);
-
         return redirect()->route('admin.roles')
             ->with('success', 'Role updated successfully!');
     }
@@ -130,7 +116,7 @@ class RoleController extends Controller
     public function destroy(Role $role)
     {
         // Only admin can manage roles
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403);
         }
 
@@ -153,7 +139,7 @@ class RoleController extends Controller
     public function features()
     {
         // Only admin can manage features
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403);
         }
 
@@ -167,7 +153,7 @@ class RoleController extends Controller
     public function toggleFeature(Feature $feature)
     {
         // Only admin can manage features
-        if (!Auth::user() || !Auth::user()->hasRole('admin')) {
+        if (!Auth::user() || !Auth::user()->hasRole(Role::KESISWAAN)) {
             abort(403);
         }
 
