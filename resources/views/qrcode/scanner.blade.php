@@ -725,7 +725,7 @@
     @endif
 
     @if($todayQRCodes)
-        <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+        @vite('resources/js/jsqr-loader.js')
         <script>
             const state = {
                 qrCode: null,

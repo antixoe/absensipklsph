@@ -15,6 +15,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QRCodeController;
+use App\Http\Controllers\StudentController;
 
 // Guest routes
 Route::middleware('guest')->group(function () {
@@ -67,10 +68,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/qrcode', [QRCodeController::class, 'index'])->name('qrcode.index');
     Route::get('/qrcode/create', [QRCodeController::class, 'create'])->name('qrcode.create');
     Route::post('/qrcode', [QRCodeController::class, 'store'])->name('qrcode.store');
+    Route::get('/qrcode/{qrCode}/export', [QRCodeController::class, 'exportPdf'])->name('qrcode.export');
     Route::get('/qrcode/{qrCode}', [QRCodeController::class, 'show'])->name('qrcode.show');
     Route::patch('/qrcode/{qrCode}/deactivate', [QRCodeController::class, 'deactivate'])->name('qrcode.deactivate');
     Route::get('/qrcode/{qrCode}/download', [QRCodeController::class, 'downloadQRImage'])->name('qrcode.download');
     
+    // Student QR code management
+    Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+    Route::get('/students/{student}/qrcode', [StudentController::class, 'showQRCode'])->name('students.qrcode.show');
+    Route::get('/students/{student}/qrcode/download', [StudentController::class, 'downloadQRCode'])->name('students.qrcode.download');
+    Route::get('/students/{student}/qrcode/export', [StudentController::class, 'exportQRCode'])->name('students.qrcode.export');
+    Route::post('/students/{student}/qrcode/regenerate', [StudentController::class, 'regenerateQRCode'])->name('students.qrcode.regenerate');
+
     // QR Code Scanning (Teachers only - students cannot scan)
     Route::get('/qrcode-scanner', [QRCodeController::class, 'teacherScanner'])->name('qrcode.teacher-scanner');
     Route::post('/qrcode-scan', [QRCodeController::class, 'scan'])->name('qrcode.scan');
@@ -109,6 +118,9 @@ Route::middleware('auth')->group(function () {
     // Route::post('/settings/update-language', [SettingsController::class, 'updateLanguage'])->name('settings.updateLanguage');
     Route::post('/settings/clear-logs', [SettingsController::class, 'clearLogs'])->name('settings.clearLogs');
     Route::get('/settings/export-logs', [SettingsController::class, 'exportLogs'])->name('settings.exportLogs');
+    Route::get('/settings/database/export', [SettingsController::class, 'exportDatabase'])->name('settings.exportDatabase');
+    Route::post('/settings/database/backup', [SettingsController::class, 'backupDatabase'])->name('settings.backupDatabase');
+    Route::post('/settings/database/import', [SettingsController::class, 'importDatabase'])->name('settings.importDatabase');
     Route::get('/settings/trash', [SettingsController::class, 'trash'])->name('settings.trash');
     Route::post('/activity-logs/{id}/delete', [SettingsController::class, 'delete'])->name('activity-logs.delete');
     Route::post('/activity-logs/{id}/restore', [SettingsController::class, 'restore'])->name('activity-logs.restore');

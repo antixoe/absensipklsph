@@ -124,35 +124,21 @@
         object-fit: cover;
     }
 
-    .qr-scan-guide {
+    .qr-video-hint {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 200px;
-        height: 200px;
-        border: 2px solid #f97316;
-        border-radius: 8px;
-        box-shadow: 
-            inset 0 0 0 1000px rgba(0, 0, 0, 0.5),
-            0 0 20px rgba(249, 115, 22, 0.8);
+        left: 12px;
+        top: 12px;
+        z-index: 2;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        backdrop-filter: blur(8px);
         pointer-events: none;
-    }
-
-    .qr-scan-guide::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: #f97316;
-        animation: scanLine 1.5s ease-in-out infinite;
-    }
-
-    @keyframes scanLine {
-        0%, 100% { top: 0; }
-        50% { top: calc(100% - 2px); }
     }
 
     .scan-instructions {
@@ -355,9 +341,10 @@
             flex-direction: column;
         }
 
-        .qr-scan-guide {
-            width: 140px;
-            height: 140px;
+        .qr-video-hint {
+            left: 10px;
+            top: 10px;
+            font-size: 11px;
         }
     }
 </style>
@@ -387,14 +374,14 @@
             <div class="scan-instructions">
                 <strong>How to scan:</strong>
                 1. Point camera at student's QR code<br>
-                2. Keep QR code within the frame<br>
+                2. The whole camera view is active, no small box required<br>
                 3. Attendance will be recorded automatically
             </div>
 
             <!-- Video Container -->
             <div class="qr-video-container">
                 <video id="teacher-qr-video" autoplay playsinline muted></video>
-                <div class="qr-scan-guide"></div>
+                <div class="qr-video-hint">Scan anywhere in the frame</div>
             </div>
 
             <!-- Scan Result -->
@@ -423,7 +410,6 @@
                     id="manual-qr-input" 
                     placeholder="Paste QR code here..." 
                     style="width: 100%; padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 14px; outline: none;"
-                    @keypress="event.key === 'Enter' && submitManualQR()"
                 >
                 <p style="margin: 8px 0 0; font-size: 12px; color: #64748b;">
                     Paste the QR code text and press Enter
@@ -507,76 +493,231 @@
 <!-- Hidden Canvas for QR Detection -->
 <canvas id="qr-canvas" style="display: none;"></canvas>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqrcode/0.0.1/jsqrcode.js"></script>
+@vite('resources/js/jsqr-loader.js')
 <script>
-    let scanner = null;
     let isScanning = false;
-    let scannedCodes = [];
+    let scanTimer = null;
+    let activeStream = null;
+    let lastScannedCode = null;
+    let lastScannedAt = 0;
+    let jsQRReady = false;
     const MAX_RECENT_SCANS = 5;
-
-    // Start Scanner
-    document.getElementById('btn-start-scan').addEventListener('click', async function() {
+    const barcodeDetector = (() => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' }
-            });
-            const video = document.getElementById('teacher-qr-video');
-            video.srcObject = stream;
-            
-            isScanning = true;
-            document.getElementById('btn-start-scan').style.display = 'none';
-            document.getElementById('btn-stop-scan').style.display = 'inline-flex';
-            
-            // Start continuous scanning
-            scanQRCode();
-        } catch (error) {
-            showResult('error', 'Could not access camera. Please check permissions.');
-            console.error('Camera access error:', error);
-        }
-    });
+            if (typeof window.BarcodeDetector !== 'function') {
+                return null;
+            }
 
-    // Stop Scanner
-    document.getElementById('btn-stop-scan').addEventListener('click', function() {
+            return new window.BarcodeDetector({ formats: ['qr_code'] });
+        } catch (error) {
+            console.warn('BarcodeDetector is unavailable, falling back to jsQR.', error);
+            return null;
+        }
+    })();
+
+    const jsQRPoll = setInterval(() => {
+        if (typeof window.jsQR === 'function') {
+            jsQRReady = true;
+            clearInterval(jsQRPoll);
+            console.log('jsQR loaded for teacher scanner');
+        }
+    }, 100);
+
+    function waitForJsQR(timeoutMs = 5000) {
+        return new Promise((resolve) => {
+            if (typeof window.jsQR === 'function') {
+                jsQRReady = true;
+                resolve(true);
+                return;
+            }
+
+            const poll = setInterval(() => {
+                if (typeof window.jsQR === 'function') {
+                    jsQRReady = true;
+                    clearInterval(poll);
+                    clearTimeout(timer);
+                    resolve(true);
+                }
+            }, 100);
+
+            const timer = setTimeout(() => {
+                clearInterval(poll);
+                resolve(false);
+            }, timeoutMs);
+        });
+    }
+
+    setTimeout(() => {
+        if (!jsQRReady && typeof window.jsQR !== 'function') {
+            console.warn('jsQR did not load in time for teacher scanner.');
+        }
+    }, 5000);
+
+    function stopScanner() {
         const video = document.getElementById('teacher-qr-video');
-        if (video.srcObject) {
+
+        if (scanTimer) {
+            clearTimeout(scanTimer);
+            scanTimer = null;
+        }
+
+        if (activeStream) {
+            activeStream.getTracks().forEach(track => track.stop());
+            activeStream = null;
+        } else if (video.srcObject) {
             video.srcObject.getTracks().forEach(track => track.stop());
         }
+
         isScanning = false;
         document.getElementById('btn-start-scan').style.display = 'inline-flex';
         document.getElementById('btn-stop-scan').style.display = 'none';
-    });
+    }
+
+    // Start Scanner
+    document.getElementById('btn-start-scan').addEventListener('click', startScanner);
+
+    // Stop Scanner
+    document.getElementById('btn-stop-scan').addEventListener('click', stopScanner);
+
+    async function startScanner() {
+        if (isScanning) {
+            return;
+        }
+
+        try {
+            const video = document.getElementById('teacher-qr-video');
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            });
+
+            video.srcObject = stream;
+            activeStream = stream;
+
+            await new Promise((resolve, reject) => {
+                const onReady = () => {
+                    video.play().then(resolve).catch(reject);
+                };
+
+                if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+                    onReady();
+                    return;
+                }
+
+                video.onloadedmetadata = onReady;
+                setTimeout(() => {
+                    if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+                        reject(new Error('Camera stream did not become ready in time.'));
+                    }
+                }, 5000);
+            });
+
+            isScanning = true;
+            document.getElementById('btn-start-scan').style.display = 'none';
+            document.getElementById('btn-stop-scan').style.display = 'inline-flex';
+
+            const jsQRLoaded = await waitForJsQR(5000);
+            if (!barcodeDetector && !jsQRLoaded) {
+                showResult('error', 'QR scanner decoder failed to load. Refresh the page and try again.');
+                stopScanner();
+                return;
+            }
+
+            showResult('warning', 'Camera ready. Hold the QR code inside the frame.');
+            scanQRCode();
+        } catch (error) {
+            console.error('Camera access error:', error);
+            showResult('warning', 'Camera access failed. Check permissions and try again.');
+        }
+    }
 
     // Continuous QR Scanning
-    function scanQRCode() {
+    async function scanQRCode() {
         if (!isScanning) return;
 
         const video = document.getElementById('teacher-qr-video');
-        const canvas = document.getElementById('qr-canvas');
-        const context = canvas.getContext('2d');
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        if (video.videoWidth > 0) {
-            context.drawImage(video, 0, 0);
-            
+        if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0) {
             try {
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                const code = qrcode.decode(imageData);
-                
-                if (code && code.trim()) {
+                const code = await detectQRCode(video);
+                if (code) {
                     processScannedCode(code);
                 }
             } catch (error) {
-                // QR not found in this frame, continue scanning
+                // Ignore frame decode errors and keep scanning.
             }
         }
 
-        setTimeout(scanQRCode, 500); // Scan every 500ms
+        scanTimer = setTimeout(scanQRCode, 120);
+    }
+
+    async function detectQRCode(video) {
+        if (barcodeDetector) {
+            try {
+                const barcodes = await barcodeDetector.detect(video);
+                if (barcodes.length > 0 && barcodes[0].rawValue) {
+                    return barcodes[0].rawValue.trim();
+                }
+            } catch (error) {
+                console.warn('BarcodeDetector failed, falling back to jsQR.', error);
+            }
+        }
+
+        if (jsQRReady && typeof window.jsQR === 'function') {
+            const canvas = document.getElementById('qr-canvas');
+            const context = canvas.getContext('2d', { willReadFrequently: true });
+
+            const tryDecode = (imageData) => {
+                const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert',
+                });
+
+                if (qrCode && qrCode.data) {
+                    return qrCode.data.trim();
+                }
+
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    imageData.data[i] = 255 - imageData.data[i];
+                    imageData.data[i + 1] = 255 - imageData.data[i + 1];
+                    imageData.data[i + 2] = 255 - imageData.data[i + 2];
+                }
+
+                const invertedQrCode = jsQR(imageData.data, imageData.width, imageData.height);
+
+                if (invertedQrCode && invertedQrCode.data) {
+                    return invertedQrCode.data.trim();
+                }
+
+                return '';
+            };
+
+            const scanScales = [1, 0.85, 0.7, 0.55];
+
+            for (const scale of scanScales) {
+                const targetWidth = Math.max(240, Math.floor(video.videoWidth * scale));
+                const targetHeight = Math.max(240, Math.floor(video.videoHeight * scale));
+
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                context.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+                const imageData = context.getImageData(0, 0, targetWidth, targetHeight);
+                const code = tryDecode(imageData);
+
+                if (code) {
+                    return code;
+                }
+            }
+        }
+
+        return '';
     }
 
     // Manual QR Input
-    document.getElementById('manual-qr-input').addEventListener('keypress', function(e) {
+    document.getElementById('manual-qr-input').addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && this.value.trim()) {
             processScannedCode(this.value.trim());
             this.value = '';
@@ -585,6 +726,20 @@
 
     // Process Scanned Code
     function processScannedCode(code) {
+        const normalizedCode = (code || '').trim();
+
+        if (!normalizedCode) {
+            return;
+        }
+
+        const now = Date.now();
+        if (normalizedCode === lastScannedCode && (now - lastScannedAt) < 2500) {
+            return;
+        }
+
+        lastScannedCode = normalizedCode;
+        lastScannedAt = now;
+
         // Send to backend
         fetch('{{ route("qrcode.scan") }}', {
             method: 'POST',
@@ -592,7 +747,7 @@
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ qr_code: code })
+            body: JSON.stringify({ code: normalizedCode })
         })
         .then(response => response.json())
         .then(data => {
@@ -602,7 +757,7 @@
                 updateScanCount();
             } else {
                 showResult('error', `✗ ${data.message || 'Invalid QR code'}`);
-                addRecentScan(code, 'error');
+                addRecentScan(normalizedCode, 'error');
             }
         })
         .catch(error => {
@@ -679,7 +834,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Check if camera is available
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showResult('warning', '⚠ Camera not supported on this device');
+            showResult('warning', 'Camera not supported on this device');
         }
     });
 </script>

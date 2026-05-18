@@ -140,6 +140,83 @@ class QRCodeController extends Controller
     }
 
     /**
+     * Export a QR code as a printable PDF card.
+     */
+    public function exportPdf(QRCode $qrCode)
+    {
+        // Only Kesiswaan can export QR cards.
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
+        }
+
+        $pdf = new \TCPDF('P', 'mm', [105, 148], true, 'UTF-8', false);
+        $pdf->SetCreator(config('app.name'));
+        $pdf->SetAuthor(config('app.name'));
+        $pdf->SetTitle('QR Code - ' . $qrCode->code);
+        $pdf->SetSubject('Printable QR Code Card');
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 10);
+        $pdf->AddPage();
+
+        // Header band
+        $pdf->SetFillColor(249, 115, 22);
+        $pdf->Rect(0, 0, 105, 22, 'F');
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetFont('helvetica', 'B', 16);
+        $pdf->SetY(7);
+        $pdf->Cell(0, 7, 'Absensi Sekolah', 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(0, 4, 'Printable QR Code Card', 0, 1, 'C');
+
+        $pdf->SetTextColor(17, 24, 39);
+
+        // QR Code block
+        $pdf->SetFont('helvetica', 'B', 12);
+        $pdf->SetY(30);
+        $pdf->Cell(0, 6, 'QR Code', 0, 1, 'C');
+
+        $qrStyle = [
+            'border' => 0,
+            'vpadding' => 'auto',
+            'hpadding' => 'auto',
+            'fgcolor' => [0, 0, 0],
+            'bgcolor' => false,
+            'module_width' => 1,
+            'module_height' => 1,
+        ];
+
+        $pdf->write2DBarcode($qrCode->code, 'QRCODE,H', 27, 38, 51, 51, $qrStyle, 'N');
+
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->SetY(92);
+        $pdf->Cell(0, 6, $qrCode->code, 0, 1, 'C');
+
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(0, 5, 'Generated: ' . optional($qrCode->qr_date)->format('M d, Y H:i'), 0, 1, 'C');
+        $pdf->Cell(0, 5, 'Status: ' . ucfirst($qrCode->status), 0, 1, 'C');
+
+        if (!empty($qrCode->notes)) {
+            $pdf->Ln(2);
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->MultiCell(0, 4, 'Notes: ' . $qrCode->notes, 0, 'C', false, 1);
+        }
+
+        $pdf->SetY(132);
+        $pdf->SetFont('helvetica', 'I', 8);
+        $pdf->Cell(0, 4, 'Scan this code with the teacher QR scanner to record attendance.', 0, 1, 'C');
+
+        $fileName = 'qr-code-' . $qrCode->code . '.pdf';
+        $content = $pdf->Output($fileName, 'S');
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
+    }
+
+    /**
      * Show QR code scanner page for teachers to scan student QR codes.
      */
     public function teacherScanner()
@@ -149,9 +226,12 @@ class QRCodeController extends Controller
             return redirect()->route('dashboard')->with('error', 'Only teachers can scan QR codes.');
         }
 
-        // Get available QR codes for today
-        $todayQRCodes = QRCode::whereDate('qr_date', Carbon::today())
-            ->where('status', 'active')
+        // Show active student QR codes first, then other active codes created today.
+        $todayQRCodes = QRCode::where('status', 'active')
+            ->where(function ($query) {
+                $query->whereHas('student')
+                    ->orWhereDate('qr_date', Carbon::today());
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -164,7 +244,8 @@ class QRCodeController extends Controller
     public function scan(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|string',
+            'code' => ['nullable', 'string'],
+            'qr_code' => ['nullable', 'string'],
             'selfie' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -182,8 +263,17 @@ class QRCodeController extends Controller
             ], 403);
         }
 
+        $code = $validated['code'] ?? $validated['qr_code'] ?? null;
+
+        if (!$code) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No QR code provided.'
+            ], 422);
+        }
+
         // Teacher scanning student QR code - create attendance for that student
-        return $this->teacherScanQRCode($request, $validated);
+        return $this->teacherScanQRCode($request, array_merge($validated, ['code' => $code]));
     }
 
     /**
@@ -219,14 +309,25 @@ class QRCodeController extends Controller
         }
 
         try {
-            // Find student by QR code ID - student QR codes are linked by qr_code_id
+            // Find student by QR code ID first, then fall back to the stored QR code text.
             $student = Student::where('qr_code_id', $qrCode->id)->first();
+
+            if (!$student) {
+                $student = Student::where('student_qr_code', $qrCode->code)->first();
+            }
 
             if (!$student) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No student found for this QR code. The QR code may not be assigned to a student.'
                 ], 404);
+            }
+
+            if (!$student->qr_code_id || $student->qr_code_id !== $qrCode->id) {
+                $student->update([
+                    'qr_code_id' => $qrCode->id,
+                    'student_qr_code' => $qrCode->code,
+                ]);
             }
 
             // Check if attendance already recorded for today
@@ -299,9 +400,13 @@ class QRCodeController extends Controller
             return redirect()->route('dashboard')->with('error', 'Unauthorized access.');
         }
 
-        // Use an online QR code API service
-        $qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($qrCode->code);
+        $barcode = new \TCPDF2DBarcode($qrCode->code, 'QRCODE,H');
+        $pngData = $barcode->getBarcodePngData(6, 6, [0, 0, 0]);
+        $fileName = 'qr-code-' . $qrCode->code . '.png';
 
-        return redirect($qrImageUrl);
+        return response($pngData, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
     }
 }

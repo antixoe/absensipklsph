@@ -75,6 +75,10 @@
             <div class="stat-label">Total Absences</div>
         </div>
         <div class="stat-card">
+            <div class="stat-value" style="color: #06b6d4;">{{ $absenceStats['present'] ?? 0 }}</div>
+            <div class="stat-label">Present</div>
+        </div>
+        <div class="stat-card">
             <div class="stat-value" style="color: #10b981;">{{ $absenceStats['approved'] }}</div>
             <div class="stat-label">Approved</div>
         </div>
@@ -90,23 +94,12 @@
 
     <!-- Charts Grid -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px; margin-bottom: 20px;">
-        
-        <!-- Absence by Status Pie Chart -->
         <div class="card">
-            <div class="card-title"><i class="bi bi-pie-chart" style="margin-right: 8px;"></i>Absence Status Distribution</div>
+            <div class="card-title"><i class="bi bi-pie-chart" style="margin-right: 8px;"></i>Attendance Status Distribution</div>
             <div style="position: relative; height: 300px;">
                 <canvas id="statusChart"></canvas>
             </div>
         </div>
-
-        <!-- Approval Rate Doughnut Chart -->
-        <div class="card">
-            <div class="card-title"><i class="bi bi-check-circle" style="margin-right: 8px;"></i>Approval Status</div>
-            <div style="position: relative; height: 300px;">
-                <canvas id="approvalChart"></canvas>
-            </div>
-        </div>
-
     </div>
 
     <!-- Daily Absence Trend Chart -->
@@ -159,7 +152,7 @@
             info: '#06b6d4',
         };
 
-        // Status Distribution Pie Chart
+        // Attendance Status Distribution Chart
         const statusCtx = document.getElementById('statusChart').getContext('2d');
         new Chart(statusCtx, {
             type: 'doughnut',
@@ -168,47 +161,10 @@
                 datasets: [{
                     data: {!! json_encode($absenceByStatus['data']) !!},
                     backgroundColor: [
+                        colors.info,
                         colors.warning,
                         colors.success,
                         colors.danger,
-                    ],
-                    borderColor: '#fff',
-                    borderWidth: 2,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#666', font: { size: 13 } }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const sum = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((context.parsed ?? 0) / sum * 100).toFixed(1);
-                                return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        // Approval Rate Chart
-        const approvalCtx = document.getElementById('approvalChart').getContext('2d');
-        new Chart(approvalCtx, {
-            type: 'doughnut',
-            data: {
-                labels: {!! json_encode($approvalRateData['labels']) !!},
-                datasets: [{
-                    data: {!! json_encode($approvalRateData['data']) !!},
-                    backgroundColor: [
-                        colors.success,
-                        colors.danger,
-                        colors.warning,
                     ],
                     borderColor: '#fff',
                     borderWidth: 2,

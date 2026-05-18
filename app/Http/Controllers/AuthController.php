@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Role;
-use App\Models\QRCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -91,14 +90,7 @@ class AuthController extends Controller
                 ]
             );
 
-            // Auto-generate QR code for student (for ID card)
-            if (!$student->qrCode) {
-                $qrCode = QRCode::createStudentQRCode($student->id);
-                $student->update([
-                    'qr_code_id' => $qrCode->id,
-                    'student_qr_code' => $qrCode->code,
-                ]);
-            }
+            $student->ensureQrCode();
         }
 
         Auth::login($user);

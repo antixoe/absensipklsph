@@ -87,7 +87,7 @@ class UsersImport
                 // If this imported user is a student, make sure the student profile exists too.
                 if ($role->name === Role::MURID) {
                     $nim = trim((string) ($rowData['nim'] ?? ''));
-                    Student::updateOrCreate(
+                    $student = Student::updateOrCreate(
                         ['user_id' => $user->id],
                         [
                             'internship_program_id' => isset($rowData['internship_program_id']) && is_numeric($rowData['internship_program_id'])
@@ -103,6 +103,8 @@ class UsersImport
                             'status' => $rowData['student_status'] ?? 'active',
                         ]
                     );
+
+                    $student->ensureQrCode();
                 }
 
                 $createdCount++;

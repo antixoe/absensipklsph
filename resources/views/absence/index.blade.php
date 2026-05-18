@@ -146,7 +146,7 @@
                         <div><i class="bi bi-geo-alt" style="margin-right: 5px;"></i><strong>Latitude:</strong> <span id="location-lat">Detecting...</span></div>
                         <div><i class="bi bi-geo-alt" style="margin-right: 5px;"></i><strong>Longitude:</strong> <span id="location-lng">Detecting...</span></div>
                         <div><i class="bi bi-globe" style="margin-right: 5px;"></i><strong>IP Address:</strong> <span id="location-ip">Detecting...</span></div>
-                        <div><i class="bi bi-clock" style="margin-right: 5px;"></i><strong>Time:</strong> <span id="location-time">—</span></div>
+                        <div><i class="bi bi-clock" style="margin-right: 5px;"></i><strong>Time:</strong> <span id="location-time"></span></div>
                     </div>
                 </div>
             </div>
@@ -207,12 +207,12 @@
                 <li>Keep the QR code within 10-30 cm from your camera</li>
                 <li>Hold the device steady at a slight angle (avoid glare)</li>
                 <li>The QR code will automatically detect - no manual input needed</li>
-                <li>After QR detected → take selfie → location detected → submit</li>
+                <li>After QR detected -> take selfie -> location detected -> submit</li>
             </ul>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    @vite('resources/js/jsqr-loader.js')
     <style>
         @keyframes scanPulse {
             0%, 100% { box-shadow: inset 0 0 20px rgba(249, 115, 22, 0.3); }
@@ -236,14 +236,14 @@
         const checkJsQR = setInterval(() => {
             if (typeof jsQR !== 'undefined') {
                 jsQRReady = true;
-                console.log('✓ jsQR library loaded');
+                console.log(' jsQR library loaded');
                 clearInterval(checkJsQR);
             }
         }, 100);
         
         setTimeout(() => {
             if (!jsQRReady) {
-                console.warn('⚠ jsQR library not loaded after 5 seconds, proceeding anyway');
+                console.warn(' jsQR library not loaded after 5 seconds, proceeding anyway');
                 jsQRReady = true;
             }
         }, 5000);
@@ -305,9 +305,9 @@
         // ==================== QR SCANNING ====================
         // Verify button element exists
         if (!startQRBtn) {
-            console.error('❌ QR Scanner button not found!');
+            console.error(' QR Scanner button not found!');
         } else {
-            console.log('✓ QR Scanner button found, attaching listener');
+            console.log(' QR Scanner button found, attaching listener');
             
             startQRBtn.addEventListener('click', async function() {
                 try {
@@ -322,17 +322,17 @@
                     });
                     
                     qrVideoEl.srcObject = qrStream;
-                    console.log('✓ Stream set to video element');
+                    console.log(' Stream set to video element');
                     
                     // Ensure video starts playing with proper error handling
                     await new Promise((resolve, reject) => {
                         qrVideoEl.onloadedmetadata = () => {
-                            console.log('✓ Video metadata loaded');
+                            console.log(' Video metadata loaded');
                             qrVideoEl.play().then(() => {
-                                console.log('✓ Video playing - starting QR scan');
+                                console.log(' Video playing - starting QR scan');
                                 resolve();
                             }).catch(err => {
-                                console.error('❌ Play error:', err);
+                                console.error(' Play error:', err);
                                 reject(err);
                             });
                         };
@@ -400,8 +400,8 @@
 
         function startScanning() {
             qrScannerActive = true;
-            showStatus('🎯 Scanning... Point at QR code', 'info');
-            console.log('✓ QR Scanning started');
+            showStatus(' Scanning... Point at QR code', 'info');
+            console.log(' QR Scanning started');
             console.log('Video element:', { width: qrVideoEl.videoWidth, height: qrVideoEl.videoHeight });
             
             // Scan every 200ms for better detection
@@ -448,7 +448,7 @@
                     
                     // Check if jsQR is available
                     if (typeof jsQR === 'undefined') {
-                        console.warn('⚠ jsQR library not ready yet');
+                        console.warn(' jsQR library not ready yet');
                         return;
                     }
                     
@@ -470,7 +470,7 @@
                             }
                             
                             if (code && code.data) {
-                                console.log('✅ QR Code detected:', code.data);
+                                console.log(' QR Code detected:', code.data);
                                 qrScannerActive = false;
                                 clearInterval(qrScanInterval);
                                 validateAndSetQRCode(code.data);
@@ -486,7 +486,7 @@
                         console.log(`Scanning... (${scanCount} frames scanned)`);
                     }
                 } catch (error) {
-                    console.error('❌ Scan loop error:', error);
+                    console.error(' Scan loop error:', error);
                 }
             }, 200);
         }
@@ -518,7 +518,7 @@
             qrScanOverlay.style.boxShadow = 'inset 0 0 30px rgba(16, 185, 129, 0.8)';
             qrScanOverlay.style.borderColor = '#10b981';
             
-            showStatus('✅ QR Code Detected! Processing...', 'success');
+            showStatus('QR Code detected! Processing...', 'success');
             
             state.qrCode = code;
             console.log('QR Code stored:', state.qrCode);
@@ -538,7 +538,7 @@
                 step2Icon.style.background = '#f97316';
                 step2Icon.style.color = 'white';
                 
-                showStatus('📸 Now take a clear selfie to continue...', 'success');
+                showStatus('Now take a clear selfie to continue...', 'success');
                 startSelfieBtnEl.focus();
             }, 500);
         }
@@ -554,13 +554,13 @@
                     video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
                 });
                 
-                console.log('✓ Selfie stream obtained');
+                console.log('Selfie stream obtained');
                 selfieVideoEl.srcObject = selfieStream;
-                console.log('✓ Stream set to video element');
+                console.log('Stream set to video element');
                 
                 // Ensure video starts playing
                 await selfieVideoEl.play();
-                console.log('✓ Selfie video playing');
+                console.log('Selfie video playing');
                 
                 selfieVideoEl.style.display = 'block';
                 selfiePlaceholderEl.style.display = 'none';
@@ -569,7 +569,7 @@
                 takeSelfieBtnEl.style.display = 'block';
                 takeSelfieBtnEl.focus();
                 
-                showStatus('✓ Camera ready. Tap "Take Photo" when ready.', 'success');
+                showStatus('Camera ready. Tap "Take Photo" when ready.', 'success');
             } catch (error) {
                 console.error('Selfie camera error:', error);
                 showStatus('Camera access denied. Please enable camera permissions.', 'error');
@@ -636,11 +636,11 @@
                 });
                 
                 selfieVideoEl.srcObject = selfieStream;
-                console.log('✓ Retake stream set');
+                console.log('Retake stream set');
                 
                 // Ensure video starts playing
                 await selfieVideoEl.play();
-                console.log('✓ Retake video playing');
+                console.log('Retake video playing');
                 
                 selfieVideoEl.style.display = 'block';
                 selfiePreviewEl.style.display = 'none';
@@ -719,7 +719,7 @@
         }
 
         function enableSubmitButton() {
-            console.log('✓ Submit button enabled');
+            console.log('Submit button enabled');
             console.log('Current state:', {
                 qrCode: state.qrCode ? 'Present' : 'Missing',
                 selfie: state.selfieBlob ? 'Present (' + state.selfieBlob.size + ' bytes)' : 'Missing',

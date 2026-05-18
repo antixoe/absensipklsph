@@ -153,13 +153,11 @@ class ReportController extends Controller
         $absenceStats = $this->getAbsenceStatistics($startDate, $endDate, $currentUser);
         $absenceByStatus = $this->getAbsenceByStatus($startDate, $endDate, $currentUser);
         $dailyAbsenceData = $this->getDailyAbsenceData($startDate, $endDate, $currentUser);
-        $approvalRateData = $this->getApprovalRateData($startDate, $endDate, $currentUser);
 
         return view('reports.index', compact(
             'absenceStats',
             'absenceByStatus',
             'dailyAbsenceData',
-            'approvalRateData',
             'dateRange',
             'startDate',
             'endDate',
@@ -181,6 +179,7 @@ class ReportController extends Controller
 
         return [
             'total' => $absences->count(),
+            'present' => $absences->where('status', 'present')->count(),
             'pending' => $absences->where('status', 'pending')->count(),
             'approved' => $absences->where('status', 'approved')->count(),
             'rejected' => $absences->where('status', 'rejected')->count(),
@@ -201,8 +200,9 @@ class ReportController extends Controller
         )->get();
 
         return [
-            'labels' => ['Pending', 'Approved', 'Rejected'],
+            'labels' => ['Present', 'Pending', 'Approved', 'Rejected'],
             'data' => [
+                $absences->where('status', 'present')->count(),
                 $absences->where('status', 'pending')->count(),
                 $absences->where('status', 'approved')->count(),
                 $absences->where('status', 'rejected')->count(),
@@ -234,26 +234,6 @@ class ReportController extends Controller
         return [
             'dates' => $dates,
             'data' => $absenceCounts,
-        ];
-    }
-
-    /**
-     * Get approval rate data
-     */
-    private function getApprovalRateData($startDate, $endDate, ?User $user = null)
-    {
-        $absences = $this->scopeAbsencesForUser(
-            Absence::whereBetween('absence_date', [$startDate, $endDate]),
-            $user
-        )->get();
-
-        $approved = $absences->where('status', 'approved')->count();
-        $rejected = $absences->where('status', 'rejected')->count();
-        $pending = $absences->where('status', 'pending')->count();
-
-        return [
-            'labels' => ['Approved', 'Rejected', 'Pending'],
-            'data' => [$approved, $rejected, $pending],
         ];
     }
 
@@ -419,4 +399,3 @@ class ReportController extends Controller
         ));
     }
 }
-

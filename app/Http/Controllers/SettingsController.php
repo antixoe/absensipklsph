@@ -6,6 +6,8 @@ use App\Models\ActivityLog;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 class SettingsController extends Controller
@@ -287,6 +289,378 @@ class SettingsController extends Controller
 
         return response()
             ->streamDownload(fn() => print($csvContent), 'activity-logs-' . now()->format('Y-m-d-His') . '.csv');
+    }
+
+    /**
+     * Export the current database as a downloadable backup file.
+     */
+    public function exportDatabase()
+    {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
+
+        try {
+            $exportPath = $this->createDatabaseDump('database-export', false);
+
+            return response()->download($exportPath, basename($exportPath))
+                ->deleteFileAfterSend(true);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Failed to export database: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a persistent backup copy of the current database and download it.
+     */
+    public function backupDatabase()
+    {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
+
+        try {
+            $backupPath = $this->createDatabaseDump('database-backup', true);
+
+            return response()->download($backupPath, basename($backupPath));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Failed to create database backup: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Import/restore the database from an uploaded backup file.
+     */
+    public function importDatabase(Request $request)
+    {
+        if (!auth()->user()->hasRole(Role::KESISWAAN)) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
+
+        $driver = $this->getDatabaseDriver();
+        $allowedExtensions = $driver === 'sqlite'
+            ? ['sqlite', 'sqlite3', 'db']
+            : ['sql'];
+
+        $validated = $request->validate([
+            'database_file' => [
+                'required',
+                'file',
+                'max:102400',
+                function ($attribute, $value, $fail) use ($allowedExtensions) {
+                    $extension = strtolower($value->getClientOriginalExtension());
+
+                    if (!in_array($extension, $allowedExtensions, true)) {
+                        $fail('The database file must be a valid backup file.');
+                    }
+                },
+            ],
+        ]);
+
+        try {
+            $this->createDatabaseDump('pre-import-backup', true);
+
+            $uploadedFile = $validated['database_file'];
+
+            if ($driver === 'sqlite') {
+                $databasePath = $this->getDatabasePath();
+
+                if (!file_exists($databasePath)) {
+                    return redirect()->back()->with('error', 'Database file not found.');
+                }
+
+                if (!copy($uploadedFile->getRealPath(), $databasePath)) {
+                    return redirect()->back()->with('error', 'Failed to import database file.');
+                }
+
+                clearstatcache(true, $databasePath);
+            } elseif ($driver === 'mysql') {
+                $sql = file_get_contents($uploadedFile->getRealPath());
+
+                if ($sql === false || trim($sql) === '') {
+                    return redirect()->back()->with('error', 'Uploaded SQL file is empty or unreadable.');
+                }
+
+                $this->restoreDatabaseFromSql($sql);
+            } else {
+                return redirect()->back()->with('error', 'Database import is only supported for MySQL and SQLite.');
+            }
+
+            return redirect()->route('settings.index')
+                ->with('success', 'Database imported successfully. A backup was created before the import.');
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Failed to import database: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get the configured SQLite database file path.
+     */
+    private function getDatabasePath(): string
+    {
+        $databasePath = config('database.connections.sqlite.database', database_path('database.sqlite'));
+
+        return is_string($databasePath) && $databasePath !== ''
+            ? $databasePath
+            : database_path('database.sqlite');
+    }
+
+    /**
+     * Get the active database driver.
+     */
+    private function getDatabaseDriver(): string
+    {
+        return DB::connection()->getDriverName();
+    }
+
+    /**
+     * Create a timestamped database dump file.
+     */
+    private function createDatabaseDump(string $prefix, bool $persistent = false): string
+    {
+        $driver = $this->getDatabaseDriver();
+        $directory = $persistent
+            ? storage_path('app/database-backups')
+            : storage_path('app/database-exports');
+
+        File::ensureDirectoryExists($directory);
+
+        $timestamp = now()->format('Ymd_His');
+
+        if ($driver === 'sqlite') {
+            $databasePath = $this->getDatabasePath();
+
+            if (!file_exists($databasePath)) {
+                throw new \RuntimeException('Database file not found.');
+            }
+
+            $dumpPath = $directory . DIRECTORY_SEPARATOR . $prefix . '-' . $timestamp . '.sqlite';
+
+            if (!copy($databasePath, $dumpPath)) {
+                throw new \RuntimeException('Failed to create database backup file.');
+            }
+
+            return $dumpPath;
+        }
+
+        if ($driver !== 'mysql') {
+            throw new \RuntimeException('Database export is only supported for MySQL and SQLite.');
+        }
+
+        $dumpPath = $directory . DIRECTORY_SEPARATOR . $prefix . '-' . $timestamp . '.sql';
+        File::put($dumpPath, $this->buildMysqlDatabaseDump());
+
+        return $dumpPath;
+    }
+
+    /**
+     * Build a SQL dump for the current MySQL database.
+     */
+    private function buildMysqlDatabaseDump(): string
+    {
+        $tables = $this->getMysqlTables();
+        $pdo = DB::connection()->getPdo();
+        $dump = [];
+        $dump[] = 'SET FOREIGN_KEY_CHECKS=0;';
+
+        foreach ($tables as $table) {
+            $quotedTable = $this->quoteIdentifier($table);
+            $createRow = DB::selectOne('SHOW CREATE TABLE ' . $quotedTable);
+            $createData = (array) $createRow;
+            $createSql = $createData['Create Table'] ?? array_values($createData)[1] ?? null;
+
+            if (!$createSql) {
+                continue;
+            }
+
+            $dump[] = 'DROP TABLE IF EXISTS ' . $quotedTable . ';';
+            $dump[] = $createSql . ';';
+
+            $columns = Schema::getColumnListing($table);
+            $batch = [];
+
+            foreach (DB::table($table)->cursor() as $row) {
+                $batch[] = (array) $row;
+
+                if (count($batch) >= 500) {
+                    $insertSql = $this->buildInsertStatement($table, $columns, $batch, $pdo);
+                    if ($insertSql !== '') {
+                        $dump[] = $insertSql;
+                    }
+                    $batch = [];
+                }
+            }
+
+            if ($batch !== []) {
+                $insertSql = $this->buildInsertStatement($table, $columns, $batch, $pdo);
+                if ($insertSql !== '') {
+                    $dump[] = $insertSql;
+                }
+            }
+        }
+
+        $dump[] = 'SET FOREIGN_KEY_CHECKS=1;';
+
+        return implode("\n\n", $dump) . "\n";
+    }
+
+    /**
+     * Get all base tables for the active MySQL database.
+     *
+     * @return array<int, string>
+     */
+    private function getMysqlTables(): array
+    {
+        $rows = DB::select('SHOW FULL TABLES WHERE Table_type = "BASE TABLE"');
+
+        return array_values(array_filter(array_map(function ($row) {
+            $values = array_values((array) $row);
+            return $values[0] ?? null;
+        }, $rows)));
+    }
+
+    /**
+     * Build INSERT statements for a batch of rows.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private function buildInsertStatement(string $table, array $columns, array $rows, \PDO $pdo): string
+    {
+        if ($rows === [] || $columns === []) {
+            return '';
+        }
+
+        $quotedTable = $this->quoteIdentifier($table);
+        $quotedColumns = implode(', ', array_map(fn (string $column) => $this->quoteIdentifier($column), $columns));
+        $values = [];
+
+        foreach ($rows as $row) {
+            $rowValues = [];
+
+            foreach ($columns as $column) {
+                $rowValues[] = $this->quoteDumpValue($row[$column] ?? null, $pdo);
+            }
+
+            $values[] = '(' . implode(', ', $rowValues) . ')';
+        }
+
+        return 'INSERT INTO ' . $quotedTable . ' (' . $quotedColumns . ") VALUES\n"
+            . implode(",\n", $values) . ';';
+    }
+
+    /**
+     * Quote a database identifier for SQL output.
+     */
+    private function quoteIdentifier(string $identifier): string
+    {
+        return '`' . str_replace('`', '``', $identifier) . '`';
+    }
+
+    /**
+     * Quote a database value for use in a SQL dump.
+     */
+    private function quoteDumpValue(mixed $value, \PDO $pdo): string
+    {
+        if ($value === null) {
+            return 'NULL';
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $pdo->quote($value->format('Y-m-d H:i:s'));
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        return $pdo->quote((string) $value);
+    }
+
+    /**
+     * Restore the current MySQL database from SQL text.
+     */
+    private function restoreDatabaseFromSql(string $sql): void
+    {
+        $statements = $this->splitSqlStatements($sql);
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+        try {
+            foreach ($statements as $statement) {
+                $trimmed = trim($statement);
+
+                if ($trimmed === '') {
+                    continue;
+                }
+
+                DB::unprepared($trimmed);
+            }
+        } finally {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
+    }
+
+    /**
+     * Split SQL text into executable statements.
+     *
+     * @return array<int, string>
+     */
+    private function splitSqlStatements(string $sql): array
+    {
+        $sql = preg_replace('/^\xEF\xBB\xBF/', '', $sql) ?? $sql;
+        $statements = [];
+        $buffer = '';
+        $inSingleQuote = false;
+        $inDoubleQuote = false;
+        $escapeNext = false;
+        $length = strlen($sql);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $sql[$i];
+            $buffer .= $char;
+
+            if ($escapeNext) {
+                $escapeNext = false;
+                continue;
+            }
+
+            if ($char === '\\' && ($inSingleQuote || $inDoubleQuote)) {
+                $escapeNext = true;
+                continue;
+            }
+
+            if ($char === "'" && !$inDoubleQuote) {
+                $inSingleQuote = !$inSingleQuote;
+                continue;
+            }
+
+            if ($char === '"' && !$inSingleQuote) {
+                $inDoubleQuote = !$inDoubleQuote;
+                continue;
+            }
+
+            if ($char === ';' && !$inSingleQuote && !$inDoubleQuote) {
+                $statement = trim(rtrim($buffer, ';'));
+
+                if ($statement !== '') {
+                    $statements[] = $statement;
+                }
+
+                $buffer = '';
+            }
+        }
+
+        $statement = trim(rtrim($buffer, ';'));
+
+        if ($statement !== '') {
+            $statements[] = $statement;
+        }
+
+        return $statements;
     }
 
     /**

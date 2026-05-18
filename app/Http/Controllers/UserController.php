@@ -337,7 +337,7 @@ class UserController extends Controller
             abort(403, 'Unauthorized access');
         }
 
-        $user->load('role', 'userQrCode', 'student.qrCode');
+        $user->load('role', 'student.qrCode');
 
         $userData = [
             'id' => $user->id,
@@ -350,29 +350,20 @@ class UserController extends Controller
             'status' => $user->status,
             'created_at' => $user->created_at->format('M d, Y H:i'),
             'updated_at' => $user->updated_at->format('M d, Y H:i'),
-            'user_qr_code' => null,
-            'user_qr_image_url' => null,
-            'user_qr_status' => null,
-            'user_qr_created_at' => null,
             'student_qr_code' => null,
             'student_qr_image_url' => null,
             'student_qr_status' => null,
             'student_qr_created_at' => null,
+            'student_id' => null,
             'nim' => null,
             'school' => null,
             'has_student' => false,
         ];
 
-        if ($user->userQrCode) {
-            $userData['user_qr_code'] = $user->userQrCode->code;
-            $userData['user_qr_image_url'] = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($user->userQrCode->code);
-            $userData['user_qr_status'] = $user->userQrCode->status;
-            $userData['user_qr_created_at'] = optional($user->userQrCode->created_at)->format('M d, Y H:i');
-        }
-
         // Add student QR code info if user has a student profile
         if ($user->student && $user->student->qrCode) {
             $userData['has_student'] = true;
+            $userData['student_id'] = $user->student->id;
             $userData['student_qr_code'] = $user->student->qrCode->code;
             $userData['student_qr_image_url'] = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($user->student->qrCode->code);
             $userData['student_qr_status'] = $user->student->qrCode->status;
@@ -396,7 +387,7 @@ class UserController extends Controller
             abort(403, 'Unauthorized access');
         }
 
-        $user->load('role', 'userQrCode', 'student.qrCode');
+        $user->load('role', 'student.qrCode');
         $roles = Role::all();
 
         return response()->json([

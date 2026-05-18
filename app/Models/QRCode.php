@@ -43,6 +43,14 @@ class QRCode extends Model
     }
 
     /**
+     * Get the student who owns this student QR code.
+     */
+    public function student(): HasOne
+    {
+        return $this->hasOne(Student::class, 'qr_code_id');
+    }
+
+    /**
      * Get the absences that used this QR code.
      */
     public function absences(): HasMany
@@ -76,7 +84,7 @@ class QRCode extends Model
     /**
      * Create a student-specific QR code.
      */
-    public static function createStudentQRCode(int $studentId): self
+    public static function createStudentQRCode(int $studentId, ?string $studentName = null): self
     {
         $code = self::generateCode();
 
@@ -85,7 +93,9 @@ class QRCode extends Model
             'qr_date' => now(),
             'created_by' => auth()->id() ?? 1, // Use current user or system user
             'status' => 'active',
-            'notes' => "Student ID Card QR Code - Student #{$studentId}",
+            'notes' => $studentName
+                ? "Student ID Card QR Code - {$studentName} (#{$studentId})"
+                : "Student ID Card QR Code - Student #{$studentId}",
             'expires_at' => null, // Student QR codes don't expire
         ]);
     }

@@ -69,9 +69,10 @@
                                     @endif
                                 </td>
                                 <td style="padding: 12px; text-align: center;">
-                                    <button type="button" onclick="showQRModal('{{ $qr->id }}')" class="btn" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
+                                    <a href="{{ route('qrcode.export', $qr) }}" class="btn" style="padding: 6px 12px; font-size: 12px; margin-right: 5px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;">
+                                        <i class="bi bi-file-earmark-arrow-down"></i>
+                                        Export
+                                    </a>
                                     <button type="button" onclick="downloadQRImage('{{ $qr->code }}')" class="btn" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">
                                         <i class="bi bi-download"></i>
                                     </button>
@@ -90,7 +91,7 @@
             <!-- Pagination -->
             @if($qrCodes->hasPages())
                 <div style="margin-top: 20px; padding: 20px; background: #f5f5f5; border-top: 1px solid #ddd; border-radius: 0 0 8px 8px;">
-                    {{ $qrCodes->links() }}
+                    {{ $qrCodes->onEachSide(1)->links(view: 'pagination.custom-pagination') }}
                 </div>
             @endif
         </div>

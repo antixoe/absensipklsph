@@ -65,4 +65,12 @@ class Absence extends Model
     {
         return $this->belongsTo(QRCode::class, 'qr_code_id');
     }
+
+    /**
+     * Get the user who recorded this absence via QR scan.
+     */
+    public function recorder(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
+    }
 }

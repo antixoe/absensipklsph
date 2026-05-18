@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -97,7 +98,6 @@ class User extends Authenticatable
     {
         static::saved(function (User $user) {
             $user->ensureStudentProfile();
-            $user->ensureUserQrCode();
         });
     }
 
@@ -110,7 +110,7 @@ class User extends Authenticatable
             return null;
         }
 
-        return $this->student()->firstOrCreate(
+        $student = $this->student()->firstOrCreate(
             ['user_id' => $this->id],
             [
                 'internship_program_id' => null,
@@ -124,6 +124,10 @@ class User extends Authenticatable
                 'status' => 'active',
             ]
         );
+
+        $student->ensureQrCode();
+
+        return $student;
     }
 
     /**
@@ -131,6 +135,10 @@ class User extends Authenticatable
      */
     public function ensureUserQrCode(): ?QRCode
     {
+        if (!Schema::hasColumn($this->getTable(), 'user_qr_code_id')) {
+            return null;
+        }
+
         if ($this->userQrCode) {
             return $this->userQrCode;
         }

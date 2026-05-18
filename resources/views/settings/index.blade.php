@@ -44,6 +44,48 @@
             align-items: center;
         }
 
+        .database-tools-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .database-tools-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .database-tools-card p {
+            margin: 0 0 1rem 0;
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        .database-tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            align-items: start;
+        }
+
+        .database-upload-form {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .database-upload-form input[type="file"] {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            background: #fff;
+            font-size: 0.9rem;
+        }
+
         /* Statistics Cards */
         .stats-container {
             display: grid;
@@ -552,6 +594,43 @@
             <!-- Language settings section removed -->
         </div>
     </div>
+
+    @if(auth()->user()->hasRole('admin'))
+        <div class="database-tools-card">
+            <h3><i class="bi bi-database-gear"></i> Database Tools</h3>
+            <p>Export a database dump, create a persistent backup on the server, or restore from an uploaded backup file.</p>
+
+            <div class="database-tools-grid">
+                <div>
+                    <div class="action-buttons" style="justify-content: flex-start; margin-bottom: 0.75rem;">
+                        <a href="{{ route('settings.exportDatabase') }}" class="btn btn-primary">
+                            <i class="bi bi-download"></i>Export Database
+                        </a>
+                        <form method="POST" action="{{ route('settings.backupDatabase') }}" style="display: inline;" onsubmit="return confirm('Create a database backup and keep it on the server?');">
+                            @csrf
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="bi bi-shield-check"></i>Backup Database
+                            </button>
+                        </form>
+                    </div>
+                    <small style="color: #6c757d;">Export downloads a SQL dump. Backup stores a copy in <code>storage/app/database-backups</code>.</small>
+                </div>
+
+                <div>
+                    <form method="POST" action="{{ route('settings.importDatabase') }}" enctype="multipart/form-data" class="database-upload-form" onsubmit="return confirm('Importing a database will replace the current database contents. Continue?');">
+                        @csrf
+                        <div>
+                            <label for="database_file" style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Import Database</label>
+                            <input type="file" name="database_file" id="database_file" accept=".sql,.sqlite,.sqlite3,.db" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i>Import Database
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Statistics Cards -->
     <div class="stats-container">

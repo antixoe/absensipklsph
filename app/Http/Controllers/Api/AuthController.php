@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\Instructor;
 use App\Models\Role;
-use App\Models\QRCode;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -47,13 +46,7 @@ class AuthController extends \Illuminate\Routing\Controller
             ]
         );
 
-        if (!$student->qrCode) {
-            $qrCode = QRCode::createStudentQRCode($student->id);
-            $student->update([
-                'qr_code_id' => $qrCode->id,
-                'student_qr_code' => $qrCode->code,
-            ]);
-        }
+        $student->ensureQrCode();
 
         $token = $user->createToken('auth_token')->plainTextToken;
 

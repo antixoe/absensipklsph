@@ -479,7 +479,7 @@
                                         <label style="display: block; margin-bottom: 5px; color: #666; font-size: 12px; font-weight: 600;">Address</label>
                                         <p style="font-size: 14px; font-weight: 500; white-space: pre-wrap;">${user.address}</p>
                                     </div>` : ''}
-                                    ${user.user_qr_code ? `
+                                    ${false && user.user_qr_code ? `
                                         <div style="grid-column: 1 / -1; margin-top: 15px; padding-top: 15px; border-top: 2px solid #e5e7eb;">
                                             <label style="display: block; margin-bottom: 12px; color: #666; font-size: 12px; font-weight: 600;">
                                                 <i class="bi bi-qr-code" style="margin-right: 6px; color: #f97316;"></i>Personal QR Code
@@ -518,6 +518,14 @@
                                                         <div><strong>School:</strong> ${user.school || '-'}</div>
                                                         <div><strong>Status:</strong> ${user.student_qr_status || '-'}</div>
                                                         <div><strong>Generated:</strong> ${user.student_qr_created_at || '-'}</div>
+                                                    </div>
+                                                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+                                                        <a href="/students/${user.student_id}/qrcode/download" style="padding: 8px 12px; background: #059669; color: white; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                                            <i class="bi bi-download"></i> Download PNG
+                                                        </a>
+                                                        <a href="/students/${user.student_id}/qrcode/export" style="padding: 8px 12px; background: #2563eb; color: white; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                                            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                                                        </a>
                                                     </div>
                                                 </div>
                                             </div>

@@ -34,6 +34,16 @@ class Student extends Model
     ];
 
     /**
+     * Ensure every student always has a personal QR code.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (Student $student) {
+            $student->ensureQrCode();
+        });
+    }
+
+    /**
      * Get the user associated with this student.
      */
     public function user(): BelongsTo
@@ -55,6 +65,44 @@ class Student extends Model
     public function qrCode(): BelongsTo
     {
         return $this->belongsTo(QRCode::class, 'qr_code_id');
+    }
+
+    /**
+     * Ensure this student has a QR code record and return it.
+     */
+    public function ensureQrCode(): ?QRCode
+    {
+        if ($this->relationLoaded('qrCode') && $this->qrCode) {
+            return $this->qrCode;
+        }
+
+        if ($this->qr_code_id) {
+            $existingQrCode = $this->qrCode()->first();
+
+            if ($existingQrCode) {
+                $this->setRelation('qrCode', $existingQrCode);
+                $this->setAttribute('student_qr_code', $existingQrCode->code);
+
+                return $existingQrCode;
+            }
+        }
+
+        $studentName = $this->relationLoaded('user') && $this->user
+            ? $this->user->name
+            : ('Student #' . $this->id);
+
+        $qrCode = QRCode::createStudentQRCode($this->id, $studentName);
+
+        self::whereKey($this->id)->update([
+            'qr_code_id' => $qrCode->id,
+            'student_qr_code' => $qrCode->code,
+        ]);
+
+        $this->setAttribute('qr_code_id', $qrCode->id);
+        $this->setAttribute('student_qr_code', $qrCode->code);
+        $this->setRelation('qrCode', $qrCode);
+
+        return $qrCode;
     }
 
     /**

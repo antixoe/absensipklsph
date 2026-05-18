@@ -592,13 +592,9 @@
                     <i class="bi bi-list-check" style="margin-right: 4px;"></i>All Absences
                 </a>
                 @if(auth()->user()->hasAnyRole(['guru', 'wali_kelas']))
-                <a href="{{ route('qrcode.teacher-scanner') }}" class="{{ request()->is('qrcode-scanner*') ? 'active' : '' }}">
-                    <i class="bi bi-qr-code" style="margin-right: 4px;"></i>QR Scanner
-                </a>
-                @else
-                <a href="{{ route('qrcode.index') }}" class="{{ request()->is('qrcode*') ? 'active' : '' }}">
-                    <i class="bi bi-qr-code" style="margin-right: 4px;"></i>QR Codes
-                </a>
+                    <a href="{{ route('qrcode.teacher-scanner') }}" class="{{ request()->is('qrcode-scanner*') ? 'active' : '' }}">
+                        <i class="bi bi-qr-code-scan" style="margin-right: 4px;"></i>QR Scanner
+                    </a>
                 @endif
             @endif
             @if(auth()->user()->hasAnyRole(['guru', 'kurikulum', 'kesiswaan']))

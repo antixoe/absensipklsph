@@ -88,42 +88,7 @@
         <!-- QR Code Section for Students -->
         @php
             $student = $user->student;
-            $personalQrCode = $user->userQrCode;
         @endphp
-
-        @if($personalQrCode)
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                <h2 style="margin-bottom: 20px;">
-                    <i class="bi bi-qr-code" style="margin-right: 8px; color: #f97316;"></i>Personal QR Code
-                </h2>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
-                    <div style="text-align: center; background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px dashed #cbd5e1;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={{ urlencode($personalQrCode->code) }}"
-                             alt="Personal QR Code" style="max-width: 250px; width: 100%; height: auto;">
-                    </div>
-
-                    <div>
-                        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                            <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-                                <strong>Status:</strong>
-                                <span style="display: inline-block; background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 6px; font-size: 12px; margin-left: 4px;">
-                                    {{ $personalQrCode->status ?? 'active' }}
-                                </span><br>
-                                <strong>Generated:</strong> {{ optional($personalQrCode->created_at)->format('M d, Y H:i') }}
-                            </p>
-                        </div>
-
-                        <div style="background: #f0fdf4; border: 1px solid #16a34a; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
-                            <p style="margin: 0; color: #166534; font-size: 13px; word-break: break-all; font-family: monospace;">
-                                <strong style="display: block; margin-bottom: 4px;">QR Code:</strong>
-                                {{ $personalQrCode->code }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
 
         @if($student)
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
@@ -171,7 +136,10 @@
                             <i class="bi bi-eye"></i> View Full Size
                         </button>
                         <button onclick="downloadQRCode()" class="btn" style="background: #059669; padding: 10px 16px; border-radius: 8px; cursor: pointer; border: none; color: white; font-weight: 600;">
-                            <i class="bi bi-download"></i> Download
+                            <i class="bi bi-download"></i> Download PNG
+                        </button>
+                        <button onclick="exportQRCode()" class="btn" style="background: #2563eb; padding: 10px 16px; border-radius: 8px; cursor: pointer; border: none; color: white; font-weight: 600;">
+                            <i class="bi bi-file-earmark-pdf"></i> Export PDF
                         </button>
                         @if(auth()->user()->hasRole(\App\Models\Role::KESISWAAN))
                             <button onclick="regenerateQRCode({{ $student->id }})" class="btn" style="background: #dc2626; padding: 10px 16px; border-radius: 8px; cursor: pointer; border: none; color: white; font-weight: 600;">
@@ -218,6 +186,14 @@
             <div style="background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 24px; margin-bottom: 20px;">
                 <img id="qr-modal-image" src="" alt="QR Code" style="max-width: 100%; width: 100%; height: auto;">
             </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px;">
+                <button onclick="downloadQRCode()" class="btn" style="background: #059669; padding: 10px 16px; border-radius: 8px; cursor: pointer; border: none; color: white; font-weight: 600;">
+                    <i class="bi bi-download"></i> Download PNG
+                </button>
+                <button onclick="exportQRCode()" class="btn" style="background: #2563eb; padding: 10px 16px; border-radius: 8px; cursor: pointer; border: none; color: white; font-weight: 600;">
+                    <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                </button>
+            </div>
             <button onclick="closeQRModal()" class="btn" style="width: 100%; background: #f1f5f9; color: #334155; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                 Close
             </button>
@@ -255,6 +231,10 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        function exportQRCode() {
+            window.location.href = '{{ route('students.qrcode.export', $student) }}';
         }
 
         function regenerateQRCode(studentId) {

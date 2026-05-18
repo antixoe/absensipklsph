@@ -498,7 +498,10 @@
                                     </button>
                                     @if($student->qrCode)
                                         <button class="btn-action download-qr" onclick="downloadQRCode({{ $student->id }})">
-                                            <i class="bi bi-download"></i> Download
+                                            <i class="bi bi-download"></i> Download PNG
+                                        </button>
+                                        <button class="btn-action download-qr" onclick="exportQRCode({{ $student->id }})" style="color: #2563eb; border-color: #2563eb;">
+                                            <i class="bi bi-file-earmark-pdf"></i> Export PDF
                                         </button>
                                         @if(auth()->user()->hasRole(\App\Models\Role::KESISWAAN))
                                             <button class="btn-action regenerate-qr" onclick="regenerateQRCode({{ $student->id }})">
@@ -551,6 +554,9 @@
             <button class="btn-modal secondary" onclick="closeQRModal()">Close</button>
             <button class="btn-modal primary" id="modal-download-btn" onclick="downloadFromModal()">
                 <i class="bi bi-download"></i> Download
+            </button>
+            <button class="btn-modal primary" onclick="exportFromModal()" style="background: #2563eb;">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
             </button>
         </div>
     </div>
@@ -610,6 +616,14 @@
                             </p>
                         </div>
                         <div class="qr-code-text">${data.qr_code}</div>
+                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px;">
+                            <a href="/students/${studentId}/qrcode/download" class="btn-modal secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="bi bi-download"></i> Download PNG
+                            </a>
+                            <a href="/students/${studentId}/qrcode/export" class="btn-modal primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                            </a>
+                        </div>
                     </div>
                 `;
 
@@ -637,9 +651,18 @@
         downloadQRCode(studentId);
     }
 
+    function exportFromModal() {
+        const studentId = document.getElementById('modal-download-btn').dataset.studentId;
+        exportQRCode(studentId);
+    }
+
     // Download QR Code
     function downloadQRCode(studentId) {
         window.location.href = `/students/${studentId}/qrcode/download`;
+    }
+
+    function exportQRCode(studentId) {
+        window.location.href = `/students/${studentId}/qrcode/export`;
     }
 
     // Regenerate QR Code
