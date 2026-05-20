@@ -24,7 +24,6 @@ class Student extends Model
         'status',
         'qr_code_id',
         'student_qr_code',
-        'rombel_id',
     ];
 
     protected $dates = [
@@ -58,14 +57,6 @@ class Student extends Model
     public function internshipProgram(): BelongsTo
     {
         return $this->belongsTo(InternshipProgram::class);
-    }
-
-    /**
-     * Get the learning group associated with this student.
-     */
-    public function rombel(): BelongsTo
-    {
-        return $this->belongsTo(RombonganBelajar::class, 'rombel_id');
     }
 
     /**
