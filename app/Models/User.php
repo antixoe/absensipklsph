@@ -34,6 +34,7 @@ class User extends Authenticatable
         'status',
         'role_id',
         'level',
+        'rombel_id',
     ];
 
     /**
@@ -73,6 +74,16 @@ class User extends Authenticatable
     public function student(): HasOne
     {
         return $this->hasOne(Student::class);
+    }
+
+    /**
+     * Get the learning group assigned to this user.
+     *
+     * This is used both for homeroom teachers and student accounts.
+     */
+    public function rombel(): BelongsTo
+    {
+        return $this->belongsTo(RombonganBelajar::class, 'rombel_id');
     }
 
     /**

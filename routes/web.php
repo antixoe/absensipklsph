@@ -54,7 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/absence', [AbsenceController::class, 'index'])->name('absence.index');
     Route::get('/absence/create', [AbsenceController::class, 'create'])->name('absence.create');
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
-    Route::get('/absence/all', [AbsenceController::class, 'all'])->name('absence.all');
+    Route::get('/absence/all', [AbsenceController::class, 'all'])
+        ->middleware('can:viewAbsenceData')
+        ->name('absence.all');
     // Check-out removed - only check-in is used now (teacher scans QR code)
     
     // Notifications
